@@ -1,10 +1,11 @@
 .aireports-ask { padding: 1.5rem; }
 .aireports-ask__form { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
 .aireports-ask__input { flex: 1; font-size: 1rem; padding: 0.6rem 0.75rem; }
-.aireports-ask__submit { padding: 0.6rem 1.25rem; }
+.aireports-ask__submit { padding: 0.6rem 1.25rem; color: #fff; background: #2563eb; border: 1px solid #1d4ed8; border-radius: 4px; cursor: pointer; font-weight: 500; }
+.aireports-ask__submit:hover { background: #1d4ed8; }
 .aireports-ask__chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
-.aireports-ask__chip { padding: 0.35rem 0.75rem; border: 1px solid #d4d4d8; border-radius: 999px; background: #fafafa; cursor: pointer; font-size: 0.9rem; }
-.aireports-ask__chip:hover { background: #f4f4f5; }
+.aireports-ask__chip { padding: 0.35rem 0.85rem; border: 1px solid #d4d4d8; border-radius: 999px; background: #fafafa; color: #18181b; cursor: pointer; font-size: 0.9rem; line-height: 1.3; }
+.aireports-ask__chip:hover { background: #f4f4f5; color: #18181b; border-color: #a1a1aa; }
 .aireports-ask__result { border: 1px solid #e4e4e7; border-radius: 6px; padding: 1rem; background: #fff; }
 .aireports-result__head h4 { margin: 0 0 0.25rem; }
 .aireports-result__narrative { color: #71717a; font-size: 0.9rem; margin: 0 0 0.75rem; }
