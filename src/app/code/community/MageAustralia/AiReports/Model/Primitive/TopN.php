@@ -70,7 +70,13 @@ class MageAustralia_AiReports_Model_Primitive_TopN
 
         $select = $conn->select()
             ->from(['oi' => $orderItem], [])
-            ->joinInner(['o' => $order], 'o.entity_id = oi.order_id', [])
+            ->joinInner(['o' => $order], 'o.entity_id = oi.order_id', []);
+
+        if ($args['dimension'] === 'store') {
+            $select->joinLeft(['cs' => $r->getTableName('core/store')], 'cs.store_id = o.store_id', []);
+        }
+
+        $select
             ->columns([
                 'label'   => $dimensionExprs['label'],
                 'link_id' => $dimensionExprs['link_id'],
@@ -107,9 +113,9 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                 'group_by' => ['o.customer_id', 'o.customer_email'],
             ],
             'store' => [
-                'label'    => 'o.store_id',
+                'label'    => new Maho\Db\Expr("COALESCE(cs.name, CONCAT('Store ', o.store_id))"),
                 'link_id'  => 'o.store_id',
-                'group_by' => 'o.store_id',
+                'group_by' => ['o.store_id', 'cs.name'],
             ],
             'order_status' => [
                 'label'    => 'o.status',
