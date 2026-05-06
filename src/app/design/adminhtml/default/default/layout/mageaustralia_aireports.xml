@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<layout>
+    <adminhtml_aireports_ask>
+        <reference name="head">
+            <action method="addCss"><name>AiReports/ai-reports.css</name></action>
+            <action method="addItem"><type>skin_js</type><name>AiReports/vendor/chart.umd.min.js</name></action>
+            <action method="addItem"><type>skin_js</type><name>AiReports/ai-reports.js</name></action>
+        </reference>
+        <reference name="content">
+            <block type="aireports/adminhtml_ask" name="aireports.ask" template="mageaustralia/aireports/ask.phtml"/>
+        </reference>
+    </adminhtml_aireports_ask>
+
+    <adminhtml_aireports_saved>
+        <reference name="head">
+            <action method="addCss"><name>AiReports/ai-reports.css</name></action>
+            <action method="addItem"><type>skin_js</type><name>AiReports/vendor/chart.umd.min.js</name></action>
+            <action method="addItem"><type>skin_js</type><name>AiReports/ai-reports.js</name></action>
+        </reference>
+        <reference name="content">
+            <block type="aireports/adminhtml_savedGrid" name="aireports.saved" template="mageaustralia/aireports/saved_grid.phtml"/>
+        </reference>
+    </adminhtml_aireports_saved>
+</layout>
