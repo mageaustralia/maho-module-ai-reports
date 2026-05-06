@@ -38,4 +38,24 @@
             </aireports_setup>
         </resources>
     </global>
+    <admin>
+        <routers>
+            <adminhtml>
+                <args>
+                    <modules>
+                        <MageAustralia_AiReports before="Mage_Adminhtml">MageAustralia_AiReports_Adminhtml</MageAustralia_AiReports>
+                    </modules>
+                </args>
+            </adminhtml>
+        </routers>
+    </admin>
+    <adminhtml>
+        <layout>
+            <updates>
+                <aireports>
+                    <file>mageaustralia_aireports.xml</file>
+                </aireports>
+            </updates>
+        </layout>
+    </adminhtml>
 </config>
