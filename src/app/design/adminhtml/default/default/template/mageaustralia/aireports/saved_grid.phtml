@@ -6,7 +6,8 @@
 <div class="aireports-saved"
      data-run-url="<?= $this->escapeUrl($this->getRunUrl()) ?>"
      data-rename-url="<?= $this->escapeUrl($this->getRenameUrl()) ?>"
-     data-delete-url="<?= $this->escapeUrl($this->getDeleteUrl()) ?>">
+     data-delete-url="<?= $this->escapeUrl($this->getDeleteUrl()) ?>"
+     data-export-url="<?= $this->escapeUrl($this->getExportSavedUrl()) ?>">
     <table class="data">
         <thead>
             <tr>
@@ -24,6 +25,7 @@
                     <td><?= $this->escapeHtml($r->getData('updated_at')) ?></td>
                     <td>
                         <button type="button" data-aireports-run><?= $this->__('Run') ?></button>
+                        <button type="button" data-aireports-export><?= $this->__('Export CSV') ?></button>
                         <?php if ($this->canManage()): ?>
                             <button type="button" data-aireports-rename><?= $this->__('Rename') ?></button>
                             <button type="button" data-aireports-delete><?= $this->__('Delete') ?></button>

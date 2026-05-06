@@ -10,7 +10,9 @@
 .aireports-result__head h4 { margin: 0 0 0.25rem; }
 .aireports-result__narrative { color: #71717a; font-size: 0.9rem; margin: 0 0 0.75rem; }
 .aireports-result__warning { background: #fff7ed; border: 1px solid #fed7aa; padding: 0.5rem 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; color: #9a3412; }
-.aireports-result__save { margin-top: 0.75rem; padding: 0.5rem 1rem; }
+.aireports-result__actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+.aireports-result__save { padding: 0.5rem 1rem; }
+.aireports-result__export { padding: 0.5rem 1rem; }
 .aireports-block { margin: 0.75rem 0; }
 .aireports-block--chart canvas { width: 100% !important; height: 320px !important; }
 .aireports-kpi__label { font-size: 0.85rem; color: #71717a; text-transform: uppercase; }

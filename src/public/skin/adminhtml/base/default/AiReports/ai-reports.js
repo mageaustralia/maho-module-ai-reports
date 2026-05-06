@@ -12,6 +12,7 @@
         const result = root.querySelector('[data-aireports-result]');
         const generateUrl = root.dataset.generateUrl;
         const saveUrl = root.dataset.saveUrl;
+        const exportUrl = root.dataset.exportUrl;
 
         root.querySelectorAll('[data-aireports-chip]').forEach(chip => {
             chip.addEventListener('click', () => {
@@ -29,6 +30,7 @@
                 if (!data.success) { renderError(result, data.message); return; }
                 renderEnvelope(result, data.envelope, {
                     saveUrl,
+                    exportUrl,
                     queryPlan: data.query_plan,
                     renderHint: data.render_hint,
                 });
@@ -39,9 +41,10 @@
     }
 
     function setupSaved(root) {
-        const runUrl = root.dataset.runUrl;
+        const runUrl    = root.dataset.runUrl;
         const renameUrl = root.dataset.renameUrl;
         const deleteUrl = root.dataset.deleteUrl;
+        const exportUrl = root.dataset.exportUrl;
 
         root.querySelectorAll('[data-aireports-run]').forEach(btn => {
             btn.addEventListener('click', async () => {
@@ -54,10 +57,18 @@
                 try {
                     const data = await postForm(runUrl, { id });
                     if (!data.success) { renderError(target, data.message); return; }
-                    renderEnvelope(target, data.envelope, { saveUrl: null });
+                    renderEnvelope(target, data.envelope, { saveUrl: null, exportUrl: null });
                 } catch (err) {
                     renderError(target, err.message);
                 }
+            });
+        });
+
+        root.querySelectorAll('[data-aireports-export]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const row = btn.closest('tr');
+                const id = row.dataset.reportId;
+                submitDownloadForm(exportUrl, { id });
             });
         });
 
@@ -95,6 +106,33 @@
         return res.json();
     }
 
+    /**
+     * Triggers a file download by building a temporary form and submitting it.
+     * The browser handles the download natively without fetch+blob overhead.
+     */
+    function submitDownloadForm(url, payload) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        form.style.display = 'none';
+
+        const addField = (name, value) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            form.appendChild(input);
+        };
+
+        addField('form_key', window.FORM_KEY || '');
+        Object.entries(payload).forEach(([k, v]) => addField(k, v));
+
+        document.body.appendChild(form);
+        form.submit();
+        // Remove after a short delay to keep the DOM clean.
+        setTimeout(() => document.body.removeChild(form), 2000);
+    }
+
     function renderLoading(target) {
         target.hidden = false;
         target.innerHTML = '<div class="aireports-loading">Generating report...</div>';
@@ -122,6 +160,22 @@
 
         env.blocks.forEach(block => target.appendChild(renderBlock(block)));
 
+        const actions = document.createElement('div');
+        actions.className = 'aireports-result__actions';
+
+        if (ctx.exportUrl && ctx.queryPlan) {
+            const exportBtn = document.createElement('button');
+            exportBtn.type = 'button';
+            exportBtn.className = 'aireports-result__export';
+            exportBtn.textContent = 'Export CSV';
+            exportBtn.addEventListener('click', () => {
+                submitDownloadForm(ctx.exportUrl, {
+                    query_plan_json: JSON.stringify(ctx.queryPlan),
+                });
+            });
+            actions.appendChild(exportBtn);
+        }
+
         if (ctx.saveUrl && ctx.queryPlan) {
             const saveBtn = document.createElement('button');
             saveBtn.type = 'button';
@@ -136,7 +190,11 @@
                 });
                 if (data.success) alert('Saved.'); else alert('Failed: ' + data.message);
             });
-            target.appendChild(saveBtn);
+            actions.appendChild(saveBtn);
+        }
+
+        if (actions.hasChildNodes()) {
+            target.appendChild(actions);
         }
     }
 
