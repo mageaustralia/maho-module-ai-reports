@@ -65,23 +65,32 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
         $from = (new \DateTimeImmutable("-$lookbackDays days"))->format('Y-m-d 00:00:00');
         $to   = (new \DateTimeImmutable('today'))->format('Y-m-d 23:59:59');
 
+        $salesSubSelect = $conn->select()
+            ->from(['oi2' => $r->getTableName('sales/order_item')], [
+                'product_id' => 'oi2.product_id',
+                'qty_sold'   => new Maho\Db\Expr('SUM(oi2.qty_ordered)'),
+                'name'       => new Maho\Db\Expr('MAX(oi2.name)'),
+            ])
+            ->joinInner(['o2' => $r->getTableName('sales/order')], 'o2.entity_id = oi2.order_id', [])
+            ->where('o2.created_at >= ?', $from)
+            ->where('o2.created_at <= ?', $to)
+            ->where('o2.state NOT IN (?)', ['canceled', 'closed'])
+            ->group('oi2.product_id');
+
+        if (!empty($scopeStoreIds)) {
+            $salesSubSelect->where('o2.store_id IN (?)', $scopeStoreIds);
+        }
+
         $select = $conn->select()
             ->from(['p' => $r->getTableName('catalog/product')], ['product_id' => 'entity_id', 'sku'])
             ->joinLeft(['stock' => $r->getTableName('cataloginventory/stock_item')],
                 'stock.product_id = p.entity_id', ['qty_on_hand' => 'stock.qty'])
-            ->joinLeft(['oi' => $r->getTableName('sales/order_item')],
-                'oi.product_id = p.entity_id', ['name' => 'MAX(oi.name)'])
-            ->joinLeft(['o' => $r->getTableName('sales/order')],
-                "o.entity_id = oi.order_id AND o.created_at >= " . $conn->quote($from) .
-                " AND o.created_at <= " . $conn->quote($to) .
-                " AND o.state NOT IN ('canceled', 'closed')",
-                ['qty_sold' => 'SUM(oi.qty_ordered)'])
-            ->where('p.entity_id IN (?)', $productIds)
-            ->group(['p.entity_id', 'p.sku', 'stock.qty']);
-
-        if (!empty($scopeStoreIds)) {
-            $select->where("(o.store_id IS NULL OR o.store_id IN (?))", $scopeStoreIds);
-        }
+            ->joinLeft(['sales' => new Maho\Db\Expr('(' . $salesSubSelect . ')')],
+                'sales.product_id = p.entity_id', [
+                    'qty_sold' => new Maho\Db\Expr('COALESCE(sales.qty_sold, 0)'),
+                    'name'     => 'sales.name',
+                ])
+            ->where('p.entity_id IN (?)', $productIds);
 
         $rows = $conn->fetchAll($select);
         foreach ($rows as &$row) {
