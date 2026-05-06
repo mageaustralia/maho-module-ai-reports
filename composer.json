@@ -1,0 +1,41 @@
+{
+    "name": "mageaustralia/maho-module-ai-reports",
+    "description": "AI-driven natural-language reporting for the Maho admin (top-N, growth, time-series, breakdown, stock-vs-velocity, low-stock primitives with saved-report dashboards)",
+    "type": "maho-module",
+    "license": "OSL-3.0",
+    "homepage": "https://github.com/mageaustralia/maho-module-ai-reports",
+    "authors": [
+        {
+            "name": "Mage Australia",
+            "email": "dev@mageaustralia.com.au",
+            "homepage": "https://mageaustralia.com.au"
+        }
+    ],
+    "require": {
+        "php": ">=8.3",
+        "mahocommerce/maho": "^26.3",
+        "opis/json-schema": "^2.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload": {
+        "psr-0": {
+            "MageAustralia_AiReports_": "src/app/code/community/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MageAustralia\\AiReports\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "map": [
+            ["src/app/code/community/MageAustralia/AiReports", "app/code/community/MageAustralia/AiReports"],
+            ["src/app/etc/modules/MageAustralia_AiReports.xml", "app/etc/modules/MageAustralia_AiReports.xml"],
+            ["src/app/design/adminhtml/default/default", "app/design/adminhtml/default/default"],
+            ["src/app/locale/en_US/MageAustralia_AiReports.csv", "app/locale/en_US/MageAustralia_AiReports.csv"],
+            ["src/public/skin/adminhtml/base/default/AiReports", "skin/adminhtml/base/default/AiReports"]
+        ]
+    }
+}
