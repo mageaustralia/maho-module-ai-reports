@@ -161,19 +161,54 @@
     function renderChart(el, block) {
         const canvas = document.createElement('canvas');
         el.appendChild(canvas);
+        const isCategorical = block.chart_type === 'pie' || block.chart_type === 'doughnut';
         const cfg = {
             type: block.chart_type,
             data: {
                 labels: block.x_axis,
-                datasets: block.series.map((s, i) => ({
-                    label: s.name,
-                    data: s.data,
-                    backgroundColor: chartColor(i, 0.6),
-                    borderColor: chartColor(i, 1.0),
-                    borderWidth: 1,
-                })),
+                datasets: block.series.map((s, i) => {
+                    if (isCategorical) {
+                        return {
+                            label: s.name,
+                            data: s.data,
+                            backgroundColor: s.data.map((_, j) => chartColor(j, 0.75)),
+                            borderColor: s.data.map((_, j) => chartColor(j, 1.0)),
+                            borderWidth: 1,
+                        };
+                    }
+                    return {
+                        label: s.name,
+                        data: s.data,
+                        backgroundColor: chartColor(i, 0.6),
+                        borderColor: chartColor(i, 1.0),
+                        borderWidth: 1,
+                    };
+                }),
             },
-            options: { responsive: true, maintainAspectRatio: false },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: isCategorical
+                            ? {
+                                generateLabels(chart) {
+                                    const data = chart.data;
+                                    if (!data.labels || !data.labels.length || !data.datasets.length) return [];
+                                    const ds = data.datasets[0];
+                                    return data.labels.map((label, i) => ({
+                                        text: String(label),
+                                        fillStyle: Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : ds.backgroundColor,
+                                        strokeStyle: Array.isArray(ds.borderColor) ? ds.borderColor[i] : ds.borderColor,
+                                        lineWidth: 1,
+                                        index: i,
+                                    }));
+                                },
+                            }
+                            : undefined,
+                    },
+                },
+            },
         };
         // eslint-disable-next-line no-new, no-undef
         new Chart(canvas.getContext('2d'), cfg);
