@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * MageAustralia_AiReports
+ *
+ * @copyright  Copyright (c) 2026 Mage Australia (https://mageaustralia.com.au)
+ * @license    https://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+
 declare(strict_types=1);
 
 class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
@@ -53,6 +60,19 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
 
     public function execute(array $args, array $scopeStoreIds): array
     {
+        return $this->shapeRows($this->fetchRawRows($args, $scopeStoreIds));
+    }
+
+    /**
+     * Returns raw DB rows with sku, label, product_id, qty_on_hand, qty_sold, lookback_days.
+     * Separated from execute() so that LowStock can consume raw rows without a lossy round-trip.
+     *
+     * @param array<string, mixed> $args
+     * @param int[] $scopeStoreIds
+     * @return array<int, array<string, mixed>>
+     */
+    public function fetchRawRows(array $args, array $scopeStoreIds): array
+    {
         $conn = Mage::getSingleton('core/resource')->getConnection('core_read');
         $r    = Mage::getSingleton('core/resource');
 
@@ -99,7 +119,7 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
         }
         unset($row);
 
-        return $this->shapeRows($rows);
+        return $rows;
     }
 
     /** @return int[] */

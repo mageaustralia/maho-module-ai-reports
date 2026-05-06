@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * MageAustralia_AiReports
+ *
+ * @copyright  Copyright (c) 2026 Mage Australia (https://mageaustralia.com.au)
+ * @license    https://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+
 declare(strict_types=1);
 
 class MageAustralia_AiReports_Model_Primitive_LowStock
@@ -43,14 +50,9 @@ class MageAustralia_AiReports_Model_Primitive_LowStock
             'product_filter' => $args['product_filter'] ?? ['type' => 'top_n_sellers', 'n' => 200, 'period' => ['type' => 'relative', 'value' => 'last_30_days']],
             'store_ids'      => $args['store_ids'] ?? null,
         ];
-        $rawRows = $svv->execute($svvArgs, $scopeStoreIds);
-        // Convert shaped rows back into the input shape shapeRows() expects.
-        $reshaped = array_map(fn ($r) => [
-            'sku' => $r['sku'], 'label' => $r['label'], 'product_id' => $r['link_id'],
-            'qty_on_hand' => $r['qty_on_hand'], 'qty_sold' => $r['daily_velocity'] * ($svvArgs['lookback_days']),
-            'lookback_days' => $svvArgs['lookback_days'],
-        ], $rawRows);
-        return $this->shapeRows($reshaped, thresholdDays: (int) $args['threshold_days']);
+        // Use fetchRawRows to avoid the lossy round-trip through shapeRows + reverse.
+        $rawRows = $svv->fetchRawRows($svvArgs, $scopeStoreIds);
+        return $this->shapeRows($rawRows, thresholdDays: (int) $args['threshold_days']);
     }
 
     /**
