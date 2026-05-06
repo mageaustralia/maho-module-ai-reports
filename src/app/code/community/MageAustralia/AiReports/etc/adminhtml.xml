@@ -4,7 +4,18 @@
         <aireports translate="title" module="aireports">
             <title>AI Reports</title>
             <sort_order>20</sort_order>
-            <action>adminhtml/aireports/ask</action>
+            <children>
+                <ask translate="title" module="aireports">
+                    <title>Ask</title>
+                    <sort_order>10</sort_order>
+                    <action>adminhtml/aireports/ask</action>
+                </ask>
+                <saved translate="title" module="aireports">
+                    <title>Saved Reports</title>
+                    <sort_order>20</sort_order>
+                    <action>adminhtml/aireports/saved</action>
+                </saved>
+            </children>
         </aireports>
     </menu>
     <acl>
