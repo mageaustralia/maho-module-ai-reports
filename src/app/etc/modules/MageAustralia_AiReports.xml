@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <MageAustralia_AiReports>
+            <active>true</active>
+            <codePool>community</codePool>
+            <depends>
+                <Maho_Ai/>
+            </depends>
+        </MageAustralia_AiReports>
+    </modules>
+</config>
