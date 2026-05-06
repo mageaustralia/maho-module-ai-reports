@@ -1,0 +1,24 @@
+<?php /** @var MageAustralia_AiReports_Block_Adminhtml_Ask $this */ ?>
+<div class="content-header">
+    <h3><?= $this->__('AI Reports') ?></h3>
+</div>
+<div class="aireports-ask"
+     data-generate-url="<?= $this->escapeUrl($this->getGenerateUrl()) ?>"
+     data-save-url="<?= $this->escapeUrl($this->getSaveUrl()) ?>">
+    <form class="aireports-ask__form" data-aireports-form>
+        <input type="text" class="aireports-ask__input" data-aireports-input
+               placeholder="<?= $this->escapeHtmlAttr($this->__('Ask a question - e.g. "Top sellers last month"')) ?>"
+               autocomplete="off"/>
+        <button type="submit" class="aireports-ask__submit"><?= $this->__('Run') ?></button>
+    </form>
+    <div class="aireports-ask__chips">
+        <?php foreach ($this->getSuggestions() as $s): ?>
+            <button type="button" class="aireports-ask__chip"
+                    data-aireports-chip
+                    data-prompt="<?= $this->escapeHtmlAttr($s['prompt']) ?>">
+                <?= $this->escapeHtml($s['label']) ?>
+            </button>
+        <?php endforeach; ?>
+    </div>
+    <div class="aireports-ask__result" data-aireports-result hidden></div>
+</div>

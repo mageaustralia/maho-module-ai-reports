@@ -1,0 +1,38 @@
+<?php /** @var MageAustralia_AiReports_Block_Adminhtml_SavedGrid $this */ ?>
+<div class="content-header">
+    <h3><?= $this->__('Saved Reports') ?></h3>
+</div>
+<div class="aireports-saved"
+     data-run-url="<?= $this->escapeUrl($this->getRunUrl()) ?>"
+     data-rename-url="<?= $this->escapeUrl($this->getRenameUrl()) ?>"
+     data-delete-url="<?= $this->escapeUrl($this->getDeleteUrl()) ?>">
+    <table class="data">
+        <thead>
+            <tr>
+                <th><?= $this->__('Title') ?></th>
+                <th><?= $this->__('Last Run') ?></th>
+                <th><?= $this->__('Updated') ?></th>
+                <th><?= $this->__('Actions') ?></th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($this->getReports() as $r): /** @var MageAustralia_AiReports_Model_Report $r */ ?>
+                <tr data-report-id="<?= (int) $r->getId() ?>">
+                    <td><?= $this->escapeHtml($r->getTitle()) ?></td>
+                    <td><?= $r->getData('last_run_at') ? $this->escapeHtml($r->getData('last_run_at')) : '-' ?></td>
+                    <td><?= $this->escapeHtml($r->getData('updated_at')) ?></td>
+                    <td>
+                        <button type="button" data-aireports-run><?= $this->__('Run') ?></button>
+                        <?php if ($this->canManage()): ?>
+                            <button type="button" data-aireports-rename><?= $this->__('Rename') ?></button>
+                            <button type="button" data-aireports-delete><?= $this->__('Delete') ?></button>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <tr data-report-result-row data-for="<?= (int) $r->getId() ?>" hidden>
+                    <td colspan="4"><div data-aireports-result></div></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
