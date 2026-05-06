@@ -11,7 +11,7 @@ class MageAustralia_AiReports_Model_Report extends Mage_Core_Model_Abstract
 
     protected function _beforeSave()
     {
-        $now = Varien_Date::now();
+        $now = Mage_Core_Model_Locale::nowUtc();
         if (!$this->getId()) {
             $this->setCreatedAt($now);
         }

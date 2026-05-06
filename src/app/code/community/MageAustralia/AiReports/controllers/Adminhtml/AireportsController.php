@@ -129,7 +129,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             );
             $envelope = $executor->run($valid['plan'], $valid['effectiveStoreIds'], $valid['scopeWarning']);
 
-            $report->setData('last_run_at', Varien_Date::now());
+            $report->setData('last_run_at', Mage_Core_Model_Locale::nowUtc());
             $report->setData('last_run_elapsed_ms', $envelope['meta']['elapsed_ms']);
             $report->save();
 
