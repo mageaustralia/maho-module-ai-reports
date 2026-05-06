@@ -88,15 +88,39 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
             return ['type' => 'chart', 'chart_type' => 'line', 'x_axis' => $dates, 'series' => $series];
         }
 
-        // bar/pie: rows have label + value
-        $labels = array_map(fn ($r) => (string) $r['label'], $rows);
-        $values = array_map(fn ($r) => (float) $r['value'], $rows);
+        $labels    = array_map(fn ($r) => (string) $r['label'], $rows);
         $chartType = $type === 'pie_chart' ? 'pie' : 'bar';
+
+        if ($primitive === 'growth') {
+            return [
+                'type'       => 'chart',
+                'chart_type' => 'bar',
+                'x_axis'     => $labels,
+                'series'     => [
+                    ['name' => 'Period A', 'data' => array_map(fn ($r) => (float) ($r['value_a'] ?? 0), $rows)],
+                    ['name' => 'Period B', 'data' => array_map(fn ($r) => (float) ($r['value_b'] ?? 0), $rows)],
+                ],
+            ];
+        }
+
+        if ($primitive === 'stock_vs_velocity' || $primitive === 'low_stock') {
+            return [
+                'type'       => 'chart',
+                'chart_type' => 'bar',
+                'x_axis'     => $labels,
+                'series'     => [
+                    ['name' => 'Days of cover', 'data' => array_map(fn ($r) => (float) ($r['days_of_cover'] ?? 0), $rows)],
+                ],
+            ];
+        }
+
+        // top_n, breakdown, default: rows have label + value
+        $values = array_map(fn ($r) => (float) ($r['value'] ?? 0), $rows);
         return [
-            'type' => 'chart',
+            'type'       => 'chart',
             'chart_type' => $chartType,
-            'x_axis' => $labels,
-            'series' => [['name' => $args['metric'] ?? 'value', 'data' => $values]],
+            'x_axis'     => $labels,
+            'series'     => [['name' => $args['metric'] ?? 'value', 'data' => $values]],
         ];
     }
 
