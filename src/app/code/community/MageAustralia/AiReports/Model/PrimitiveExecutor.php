@@ -1,12 +1,25 @@
 <?php
 
+/**
+ * MageAustralia_AiReports
+ *
+ * @copyright  Copyright (c) 2026 Mage Australia (https://mageaustralia.com.au)
+ * @license    https://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+
 declare(strict_types=1);
 
 class MageAustralia_AiReports_Model_PrimitiveExecutor
 {
+    /**
+     * @param object|null $helper  Any object with a canSeeCustomerPii(): bool method
+     *                             (typically MageAustralia_AiReports_Helper_Data).
+     *                             Typed as object so unit tests can pass lightweight stubs.
+     */
     public function __construct(
         private MageAustralia_AiReports_Model_PrimitiveRegistry $registry,
         private MageAustralia_AiReports_Model_RenderEnvelopeBuilder $envelopeBuilder,
+        private ?object $helper = null,
     ) {}
 
     /**
@@ -21,6 +34,8 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
         $rows  = $primitive->execute($plan['args'] ?? [], $effectiveStoreIds);
         $elapsedMs = (int) ((microtime(true) - $start) * 1000);
 
+        $rows = $this->maybeApplyPiiMask($rows, $plan['args'] ?? []);
+
         $renderHint = $plan['render_hint'] ?? $primitive->getDefaultRender();
         $blocks     = $this->buildBlocks($rows, $renderHint, $primitive->getName(), $plan['args'] ?? []);
 
@@ -34,6 +49,28 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
             executedAt: new \DateTimeImmutable('now'),
             rowCount: count($rows),
         );
+    }
+
+    /**
+     * Masks the label field with "[masked]" when the primitive has a customer dimension
+     * and the current admin user does not have customer PII access.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @param array<string, mixed> $args
+     * @return array<int, array<string, mixed>>
+     */
+    private function maybeApplyPiiMask(array $rows, array $args): array
+    {
+        if (($args['dimension'] ?? null) !== 'customer') {
+            return $rows;
+        }
+        if ($this->helper !== null && $this->helper->canSeeCustomerPii()) {
+            return $rows;
+        }
+        return array_map(function (array $row): array {
+            $row['label'] = '[masked]';
+            return $row;
+        }, $rows);
     }
 
     /**
