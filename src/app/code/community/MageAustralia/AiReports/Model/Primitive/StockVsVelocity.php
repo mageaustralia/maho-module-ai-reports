@@ -95,7 +95,7 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
 
     /** @return int[] */
     private function resolveProductFilter(
-        Varien_Db_Adapter_Interface $conn,
+        Maho\Db\Adapter\AdapterInterface $conn,
         Mage_Core_Model_Resource $r,
         array $filter,
         array $scopeStoreIds,
@@ -110,7 +110,7 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
                     ->where('o.created_at <= ?', $period['to'])
                     ->where('o.state NOT IN (?)', ['canceled', 'closed'])
                     ->group('oi.product_id')
-                    ->order(new Zend_Db_Expr('SUM(oi.qty_ordered) DESC'))
+                    ->order(new Maho\Db\Expr('SUM(oi.qty_ordered) DESC'))
                     ->limit((int) $filter['n']);
                 if (!empty($scopeStoreIds)) {
                     $sel->where('o.store_id IN (?)', $scopeStoreIds);

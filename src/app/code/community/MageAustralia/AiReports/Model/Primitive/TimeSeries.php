@@ -57,14 +57,14 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
             ->from(['oi' => $r->getTableName('sales/order_item')], [])
             ->joinInner(['o' => $r->getTableName('sales/order')], 'o.entity_id = oi.order_id', [])
             ->columns([
-                'date'         => new Zend_Db_Expr($bucketExpr),
-                'series_label' => new Zend_Db_Expr("'Total'"),
-                'value'        => new Zend_Db_Expr($valueExpr),
+                'date'         => new Maho\Db\Expr($bucketExpr),
+                'series_label' => new Maho\Db\Expr("'Total'"),
+                'value'        => new Maho\Db\Expr($valueExpr),
             ])
             ->where('o.created_at >= ?', $period['from'])
             ->where('o.created_at <= ?', $period['to'])
             ->where('o.state NOT IN (?)', ['canceled', 'closed'])
-            ->group(new Zend_Db_Expr($bucketExpr))
+            ->group(new Maho\Db\Expr($bucketExpr))
             ->order('date ASC');
 
         if (!empty($scopeStoreIds)) {

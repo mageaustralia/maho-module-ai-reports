@@ -49,12 +49,12 @@ class MageAustralia_AiReports_Model_Primitive_TopN
 
     /** @internal made public for buildable testing only */
     public function buildSelect(
-        Varien_Db_Adapter_Interface $conn,
+        Maho\Db\Adapter\AdapterInterface $conn,
         Mage_Core_Model_Resource $r,
         array $args,
         array $scopeStoreIds,
         array $period,
-    ): Varien_Db_Select {
+    ): Maho\Db\Select {
         $orderItem = $r->getTableName('sales/order_item');
         $order     = $r->getTableName('sales/order');
 
@@ -74,13 +74,13 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             ->columns([
                 'label'   => $dimensionExprs['label'],
                 'link_id' => $dimensionExprs['link_id'],
-                'value'   => new Zend_Db_Expr($valueExpr),
+                'value'   => new Maho\Db\Expr($valueExpr),
             ])
             ->where('o.created_at >= ?', $period['from'])
             ->where('o.created_at <= ?', $period['to'])
             ->where('o.state NOT IN (?)', ['canceled', 'closed'])
             ->group($dimensionExprs['group_by'])
-            ->order(new Zend_Db_Expr('value DESC'))
+            ->order(new Maho\Db\Expr('value DESC'))
             ->limit((int) $args['limit']);
 
         if (!empty($scopeStoreIds)) {
@@ -90,7 +90,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         return $select;
     }
 
-    /** @return array{label: string|Zend_Db_Expr, link_id: string|Zend_Db_Expr, group_by: string|array<int,string>} */
+    /** @return array{label: string|Maho\Db\Expr, link_id: string|Maho\Db\Expr, group_by: string|array<int,string>} */
     private function dimensionExprs(Mage_Core_Model_Resource $r, string $dimension): array
     {
         return match ($dimension) {
@@ -102,7 +102,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             'category' => $this->categoryExprs($r),
             'brand'    => $this->brandExprs($r),
             'customer' => [
-                'label'    => new Zend_Db_Expr("COALESCE(o.customer_email, 'Guest')"),
+                'label'    => new Maho\Db\Expr("COALESCE(o.customer_email, 'Guest')"),
                 'link_id'  => 'o.customer_id',
                 'group_by' => ['o.customer_id', 'o.customer_email'],
             ],
@@ -113,7 +113,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             ],
             'order_status' => [
                 'label'    => 'o.status',
-                'link_id'  => new Zend_Db_Expr('NULL'),
+                'link_id'  => new Maho\Db\Expr('NULL'),
                 'group_by' => 'o.status',
             ],
         };

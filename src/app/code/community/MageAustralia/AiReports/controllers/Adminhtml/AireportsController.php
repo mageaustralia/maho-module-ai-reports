@@ -58,7 +58,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
                 'render_hint' => $valid['plan']['render_hint'] ?? null,
             ]);
         } catch (\Throwable $e) {
-            Mage::log('AiReports generate error: ' . $e->getMessage(), Zend_Log::ERR);
+            Mage::log('AiReports generate error: ' . $e->getMessage(), Mage::LOG_ERROR);
             $this->_jsonError($e->getMessage());
         }
     }
@@ -93,7 +93,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
 
             $this->_jsonSuccess(['report_id' => (int) $report->getId()]);
         } catch (\Throwable $e) {
-            Mage::log('AiReports save error: ' . $e->getMessage(), Zend_Log::ERR);
+            Mage::log('AiReports save error: ' . $e->getMessage(), Mage::LOG_ERROR);
             $this->_jsonError($e->getMessage());
         }
     }
@@ -129,7 +129,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
 
             $this->_jsonSuccess(['envelope' => $envelope]);
         } catch (\Throwable $e) {
-            Mage::log('AiReports runSaved error: ' . $e->getMessage(), Zend_Log::ERR);
+            Mage::log('AiReports runSaved error: ' . $e->getMessage(), Mage::LOG_ERROR);
             $this->_jsonError($e->getMessage());
         }
     }
