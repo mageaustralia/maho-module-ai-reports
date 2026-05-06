@@ -4,6 +4,7 @@
     function init() {
         document.querySelectorAll('.aireports-ask').forEach(setupAsk);
         document.querySelectorAll('.aireports-saved').forEach(setupSaved);
+        document.querySelectorAll('.aireports-savedview').forEach(setupSavedView);
     }
 
     function setupAsk(root) {
@@ -41,28 +42,9 @@
     }
 
     function setupSaved(root) {
-        const runUrl    = root.dataset.runUrl;
         const renameUrl = root.dataset.renameUrl;
         const deleteUrl = root.dataset.deleteUrl;
         const exportUrl = root.dataset.exportUrl;
-
-        root.querySelectorAll('[data-aireports-run]').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const row = btn.closest('tr');
-                const id = row.dataset.reportId;
-                const resultRow = root.querySelector(`[data-report-result-row][data-for="${id}"]`);
-                const target = resultRow.querySelector('[data-aireports-result]');
-                resultRow.hidden = false;
-                renderLoading(target);
-                try {
-                    const data = await postForm(runUrl, { id });
-                    if (!data.success) { renderError(target, data.message); return; }
-                    renderEnvelope(target, data.envelope, { saveUrl: null, exportUrl: null });
-                } catch (err) {
-                    renderError(target, err.message);
-                }
-            });
-        });
 
         root.querySelectorAll('[data-aireports-export]').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -92,6 +74,61 @@
                 window.location.reload();
             });
         });
+    }
+
+    function setupSavedView(root) {
+        const id        = root.dataset.reportId;
+        const runUrl    = root.dataset.runUrl;
+        const exportUrl = root.dataset.exportUrl;
+        const renameUrl = root.dataset.renameUrl;
+        const deleteUrl = root.dataset.deleteUrl;
+        const backUrl   = root.dataset.backUrl;
+        const result    = root.querySelector('[data-aireports-result]');
+
+        async function runReport() {
+            renderLoading(result);
+            try {
+                const data = await postForm(runUrl, { id });
+                if (!data.success) { renderError(result, data.message); return; }
+                renderEnvelope(result, data.envelope, { saveUrl: null, exportUrl: null });
+            } catch (err) {
+                renderError(result, err.message);
+            }
+        }
+
+        // Auto-run on load.
+        runReport();
+
+        const rerunBtn = root.querySelector('[data-aireports-rerun]');
+        if (rerunBtn) {
+            rerunBtn.addEventListener('click', runReport);
+        }
+
+        const exportBtn = root.querySelector('[data-aireports-export]');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                submitDownloadForm(exportUrl, { id });
+            });
+        }
+
+        const renameBtn = root.querySelector('[data-aireports-rename]');
+        if (renameBtn) {
+            renameBtn.addEventListener('click', async () => {
+                const title = prompt('New title?');
+                if (!title) return;
+                await postForm(renameUrl, { id, title });
+                window.location.reload();
+            });
+        }
+
+        const deleteBtn = root.querySelector('[data-aireports-delete]');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', async () => {
+                if (!confirm('Delete this report?')) return;
+                await postForm(deleteUrl, { id });
+                window.location.href = backUrl;
+            });
+        }
     }
 
     async function postForm(url, payload) {

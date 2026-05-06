@@ -98,6 +98,26 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         $this->renderLayout();
     }
 
+    public function viewSavedAction(): void
+    {
+        $reportId = (int) $this->getRequest()->getParam('id');
+        /** @var MageAustralia_AiReports_Model_Report $report */
+        $report = Mage::getModel('aireports/report')->load($reportId);
+        if (!$report->getId()) {
+            Mage::getSingleton('adminhtml/session')->addError($this->__('Saved report not found.'));
+            $this->_redirect('*/*/saved');
+            return;
+        }
+        Mage::register('aireports_current_report', $report);
+
+        $this->loadLayout();
+        $this->_setActiveMenu('aireports/saved');
+        $this->_title($this->__('AI Reports'))
+             ->_title($this->__('Saved Reports'))
+             ->_title($report->getTitle());
+        $this->renderLayout();
+    }
+
     public function saveAction(): void
     {
         try {

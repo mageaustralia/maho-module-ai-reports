@@ -1,0 +1,29 @@
+<?php /** @var MageAustralia_AiReports_Block_Adminhtml_SavedView $this */ ?>
+<?php $report = $this->getReport(); ?>
+<script>window.FORM_KEY = <?= json_encode($this->getFormKey()) ?>;</script>
+<div class="content-header">
+    <a href="<?= $this->escapeUrl($this->getBackUrl()) ?>" class="aireports-back">&laquo; <?= $this->__('Back to Saved Reports') ?></a>
+    <h3><?= $this->escapeHtml($report->getTitle()) ?></h3>
+    <p class="aireports-savedview__meta">
+        <?= $this->__('Last run:') ?> <?= $report->getData('last_run_at') ? $this->escapeHtml($report->getData('last_run_at')) : '-' ?>
+        &nbsp;|&nbsp;
+        <?= $this->__('Updated:') ?> <?= $this->escapeHtml($report->getData('updated_at')) ?>
+    </p>
+</div>
+<div class="aireports-savedview"
+     data-report-id="<?= (int) $report->getId() ?>"
+     data-run-url="<?= $this->escapeUrl($this->getRunUrl()) ?>"
+     data-export-url="<?= $this->escapeUrl($this->getExportUrl()) ?>"
+     data-rename-url="<?= $this->escapeUrl($this->getRenameUrl()) ?>"
+     data-delete-url="<?= $this->escapeUrl($this->getDeleteUrl()) ?>"
+     data-back-url="<?= $this->escapeUrl($this->getBackUrl()) ?>">
+    <div class="aireports-savedview__actions">
+        <button type="button" data-aireports-rerun><?= $this->__('Re-run') ?></button>
+        <button type="button" data-aireports-export><?= $this->__('Export CSV') ?></button>
+        <?php if ($this->canManage()): ?>
+            <button type="button" data-aireports-rename><?= $this->__('Rename') ?></button>
+            <button type="button" data-aireports-delete><?= $this->__('Delete') ?></button>
+        <?php endif; ?>
+    </div>
+    <div class="aireports-savedview__result" data-aireports-result></div>
+</div>

@@ -21,4 +21,15 @@
             <block type="aireports/adminhtml_savedGrid" name="aireports.saved" template="mageaustralia/aireports/saved_grid.phtml"/>
         </reference>
     </adminhtml_aireports_saved>
+
+    <adminhtml_aireports_viewSaved>
+        <reference name="head">
+            <action method="addCss"><name>AiReports/ai-reports.css</name></action>
+            <action method="addItem"><type>skin_js</type><name>AiReports/vendor/chart.umd.min.js</name></action>
+            <action method="addItem"><type>skin_js</type><name>AiReports/ai-reports.js</name></action>
+        </reference>
+        <reference name="content">
+            <block type="aireports/adminhtml_savedView" name="aireports.savedView" template="mageaustralia/aireports/saved_view.phtml"/>
+        </reference>
+    </adminhtml_aireports_viewSaved>
 </layout>
