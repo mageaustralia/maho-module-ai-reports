@@ -8,7 +8,7 @@
      data-save-url="<?= $this->escapeUrl($this->getSaveUrl()) ?>">
     <form class="aireports-ask__form" data-aireports-form>
         <input type="text" class="aireports-ask__input" data-aireports-input
-               placeholder="<?= $this->escapeHtmlAttr($this->__('Ask a question - e.g. "Top sellers last month"')) ?>"
+               placeholder="<?= $this->escapeHtml($this->__('Ask a question - e.g. "Top sellers last month"')) ?>"
                autocomplete="off"/>
         <button type="submit" class="aireports-ask__submit"><?= $this->__('Run') ?></button>
     </form>
@@ -16,7 +16,7 @@
         <?php foreach ($this->getSuggestions() as $s): ?>
             <button type="button" class="aireports-ask__chip"
                     data-aireports-chip
-                    data-prompt="<?= $this->escapeHtmlAttr($s['prompt']) ?>">
+                    data-prompt="<?= $this->escapeHtml($s['prompt']) ?>">
                 <?= $this->escapeHtml($s['label']) ?>
             </button>
         <?php endforeach; ?>
