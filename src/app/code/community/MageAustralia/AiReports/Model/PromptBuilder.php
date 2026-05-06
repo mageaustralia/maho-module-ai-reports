@@ -45,7 +45,10 @@ Respond with valid JSON only matching this top-level schema. No markdown fences,
 }
 ```
 
-Prefer relative periods (e.g. "last_complete_month") over absolute dates when the user says "last month" or "this week". Use absolute periods only when the user names a specific date or month.
+Period guidance:
+- Prefer relative periods (e.g. "last_complete_month") when the user says "last month" or "this week".
+- Use absolute periods when the user names a specific date or month, OR when expressing a comparison anchored to the past (e.g. "vs last year", "vs same period last year"). The relative keys do not include year-over-year shifts, so for `comparison_period` you usually want an absolute period.
+- When the user asks "vs previous year" or "year-over-year": set `period` to the user's stated current window (relative) and set `comparison_period` to an absolute period whose date range is exactly one calendar year earlier than the primary period. Compute the absolute dates from today's date ($todayIso) - if the primary is "last 30 days" and today is 2026-05-07, the comparison_period should be `{type: "absolute", from: "2025-04-07", to: "2025-05-07"}`. Never set `period` and `comparison_period` to the same value - that produces a degenerate self-comparison.
 PROMPT;
     }
 }

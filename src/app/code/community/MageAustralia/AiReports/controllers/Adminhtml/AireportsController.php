@@ -43,6 +43,12 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             $rawJson = $this->_invokeWithRetry($question, $systemPrompt);
             $plan    = $this->_decodePlan($rawJson);
 
+            Mage::log(
+                'AiReports query_plan: q=' . substr($question, 0, 200) . ' plan=' . json_encode($plan, JSON_UNESCAPED_SLASHES),
+                Mage::LOG_INFO,
+                'aireports.log',
+            );
+
             $validator = new MageAustralia_AiReports_Model_QueryPlanValidator($helper->getRegistry());
             $valid     = $validator->validate($plan, $stores);
 
