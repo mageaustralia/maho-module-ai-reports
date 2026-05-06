@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * MageAustralia_AiReports
+ *
+ * @copyright  Copyright (c) 2026 Mage Australia (https://mageaustralia.com.au)
+ * @license    https://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+
 declare(strict_types=1);
 
 class MageAustralia_AiReports_Helper_Data extends Mage_Core_Helper_Abstract
@@ -53,15 +60,33 @@ class MageAustralia_AiReports_Helper_Data extends Mage_Core_Helper_Abstract
         return 'aireports_last_invoke_' . $userId;
     }
 
+    public function getLastInvokeTimestamp(): ?int
+    {
+        $key  = $this->rateLimitKeyForCurrentUser();
+        $last = (int) Mage::getSingleton('admin/session')->getData($key);
+        return $last > 0 ? $last : null;
+    }
+
+    public function recordInvoke(): void
+    {
+        $key = $this->rateLimitKeyForCurrentUser();
+        Mage::getSingleton('admin/session')->setData($key, time());
+    }
+
+    /**
+     * @deprecated Use getLastInvokeTimestamp() + recordInvoke() separately so the timestamp
+     *             is only recorded after a successful invocation.
+     */
     public function checkRateLimit(): void
     {
-        $session = Mage::getSingleton('admin/session');
-        $key     = $this->rateLimitKeyForCurrentUser();
-        $last    = (int) $session->getData($key);
-        $now     = time();
-        if ($last && ($now - $last) < self::RATE_LIMIT_SECONDS) {
+        $last = $this->getLastInvokeTimestamp();
+        if ($last && (time() - $last) < self::RATE_LIMIT_SECONDS) {
             Mage::throwException($this->__('Please wait a few seconds before submitting another report.'));
         }
-        $session->setData($key, $now);
+    }
+
+    public function canSeeCustomerPii(): bool
+    {
+        return (bool) Mage::getSingleton('admin/session')->isAllowed('customer/manage_customers');
     }
 }
