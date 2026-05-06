@@ -1,0 +1,163 @@
+<?php
+
+declare(strict_types=1);
+
+class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
+    implements MageAustralia_AiReports_Model_PrimitiveInterface
+{
+    public function getName(): string { return 'stock_vs_velocity'; }
+
+    public function getDescription(): string
+    {
+        return 'For a set of products, returns current stock-on-hand alongside sales velocity over the ' .
+               'lookback window and computed days-of-cover. product_filter is one of: ' .
+               '{type:"top_n_sellers", n, period}, {type:"skus", values}, {type:"category_id", value}.';
+    }
+
+    public function getArgsSchema(): array
+    {
+        return [
+            'type'       => 'object',
+            'required'   => ['product_filter', 'lookback_days'],
+            'additionalProperties' => false,
+            'properties' => [
+                'product_filter' => [
+                    'type'  => 'object',
+                    'oneOf' => [
+                        ['required' => ['type', 'n', 'period'], 'properties' => [
+                            'type' => ['const' => 'top_n_sellers'],
+                            'n'    => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
+                            'period' => ['type' => 'object'],
+                        ]],
+                        ['required' => ['type', 'values'], 'properties' => [
+                            'type'   => ['const' => 'skus'],
+                            'values' => ['type' => 'array', 'items' => ['type' => 'string'], 'minItems' => 1, 'maxItems' => 200],
+                        ]],
+                        ['required' => ['type', 'value'], 'properties' => [
+                            'type'  => ['const' => 'category_id'],
+                            'value' => ['type' => 'integer', 'minimum' => 1],
+                        ]],
+                    ],
+                ],
+                'lookback_days' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 730],
+                'store_ids'     => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],
+            ],
+        ];
+    }
+
+    public function getDefaultRender(): array
+    {
+        return ['primary' => 'table'];
+    }
+
+    public function execute(array $args, array $scopeStoreIds): array
+    {
+        $conn = Mage::getSingleton('core/resource')->getConnection('core_read');
+        $r    = Mage::getSingleton('core/resource');
+
+        $productIds = $this->resolveProductFilter($conn, $r, $args['product_filter'], $scopeStoreIds);
+        if (empty($productIds)) {
+            return [];
+        }
+
+        $lookbackDays = (int) $args['lookback_days'];
+        $from = (new \DateTimeImmutable("-$lookbackDays days"))->format('Y-m-d 00:00:00');
+        $to   = (new \DateTimeImmutable('today'))->format('Y-m-d 23:59:59');
+
+        $select = $conn->select()
+            ->from(['p' => $r->getTableName('catalog/product')], ['product_id' => 'entity_id', 'sku'])
+            ->joinLeft(['stock' => $r->getTableName('cataloginventory/stock_item')],
+                'stock.product_id = p.entity_id', ['qty_on_hand' => 'stock.qty'])
+            ->joinLeft(['oi' => $r->getTableName('sales/order_item')],
+                'oi.product_id = p.entity_id', ['name' => 'MAX(oi.name)'])
+            ->joinLeft(['o' => $r->getTableName('sales/order')],
+                "o.entity_id = oi.order_id AND o.created_at >= " . $conn->quote($from) .
+                " AND o.created_at <= " . $conn->quote($to) .
+                " AND o.state NOT IN ('canceled', 'closed')",
+                ['qty_sold' => 'SUM(oi.qty_ordered)'])
+            ->where('p.entity_id IN (?)', $productIds)
+            ->group(['p.entity_id', 'p.sku', 'stock.qty']);
+
+        if (!empty($scopeStoreIds)) {
+            $select->where("(o.store_id IS NULL OR o.store_id IN (?))", $scopeStoreIds);
+        }
+
+        $rows = $conn->fetchAll($select);
+        foreach ($rows as &$row) {
+            $row['lookback_days'] = $lookbackDays;
+            $row['label']         = $row['name'] ?: $row['sku'];
+        }
+        unset($row);
+
+        return $this->shapeRows($rows);
+    }
+
+    /** @return int[] */
+    private function resolveProductFilter(
+        Varien_Db_Adapter_Interface $conn,
+        Mage_Core_Model_Resource $r,
+        array $filter,
+        array $scopeStoreIds,
+    ): array {
+        switch ($filter['type']) {
+            case 'top_n_sellers':
+                $period = (new MageAustralia_AiReports_Model_PeriodNormalizer())->resolve($filter['period']);
+                $sel = $conn->select()
+                    ->from(['oi' => $r->getTableName('sales/order_item')], ['product_id'])
+                    ->joinInner(['o' => $r->getTableName('sales/order')], 'o.entity_id = oi.order_id', [])
+                    ->where('o.created_at >= ?', $period['from'])
+                    ->where('o.created_at <= ?', $period['to'])
+                    ->where('o.state NOT IN (?)', ['canceled', 'closed'])
+                    ->group('oi.product_id')
+                    ->order(new Zend_Db_Expr('SUM(oi.qty_ordered) DESC'))
+                    ->limit((int) $filter['n']);
+                if (!empty($scopeStoreIds)) {
+                    $sel->where('o.store_id IN (?)', $scopeStoreIds);
+                }
+                return array_map('intval', $conn->fetchCol($sel));
+
+            case 'skus':
+                $sel = $conn->select()
+                    ->from(['p' => $r->getTableName('catalog/product')], ['entity_id'])
+                    ->where('p.sku IN (?)', $filter['values']);
+                return array_map('intval', $conn->fetchCol($sel));
+
+            case 'category_id':
+                $sel = $conn->select()
+                    ->from(['ccp' => $r->getTableName('catalog/category_product')], ['product_id'])
+                    ->where('ccp.category_id = ?', (int) $filter['value']);
+                return array_map('intval', $conn->fetchCol($sel));
+        }
+        return [];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rawRows  rows with sku, label, product_id, qty_on_hand, qty_sold, lookback_days
+     * @return array<int, array<string, mixed>>
+     */
+    public function shapeRows(array $rawRows): array
+    {
+        $shaped = [];
+        foreach ($rawRows as $row) {
+            $qtySold      = (float) ($row['qty_sold'] ?? 0);
+            $lookbackDays = (int) ($row['lookback_days'] ?? 30);
+            $velocity     = $lookbackDays > 0 ? round($qtySold / $lookbackDays, 2) : 0.0;
+            $qtyOnHand    = (float) ($row['qty_on_hand'] ?? 0);
+            $daysOfCover  = $velocity > 0 ? round($qtyOnHand / $velocity, 1) : null;
+
+            $entry = [
+                'sku'            => (string) $row['sku'],
+                'label'          => (string) ($row['label'] ?? $row['sku']),
+                'qty_on_hand'    => $qtyOnHand,
+                'daily_velocity' => $velocity,
+                'days_of_cover'  => $daysOfCover,
+                'link_id'        => isset($row['product_id']) ? (int) $row['product_id'] : null,
+            ];
+            if ($entry['link_id']) {
+                $entry['link_url'] = '/admin/catalog_product/edit/id/' . $entry['link_id'];
+            }
+            $shaped[] = $entry;
+        }
+        return $shaped;
+    }
+}
