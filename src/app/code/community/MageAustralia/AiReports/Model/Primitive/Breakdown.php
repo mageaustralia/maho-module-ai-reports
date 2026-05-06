@@ -5,6 +5,7 @@ declare(strict_types=1);
 class MageAustralia_AiReports_Model_Primitive_Breakdown
     implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
+    use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
     public function getName(): string { return 'breakdown'; }
 
     public function getDescription(): string
@@ -21,7 +22,7 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
             'additionalProperties' => false,
             'properties'           => [
                 'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count']],
-                'dimension' => ['type' => 'string', 'enum' => ['product', 'category', 'brand', 'store', 'order_status']],
+                'dimension' => ['type' => 'string', 'enum' => ['product', 'store', 'order_status']],
                 'period'    => ['type' => 'object'],
                 'store_ids' => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],
             ],
@@ -54,11 +55,12 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
         foreach ($rawRows as $row) {
             $total += (float) $row['value'];
         }
-        $linkBase = match ($dimension) {
-            'product', 'category', 'brand' => 'catalog_product/edit/id/',
-            'store'                         => 'system_store/editStore/store_id/',
+        $linkRoute = match ($dimension) {
+            'product', 'category', 'brand' => 'adminhtml/catalog_product/edit',
+            'store'                         => 'adminhtml/system_store/editStore',
             default                          => null,
         };
+        $linkParam = $dimension === 'store' ? 'store_id' : 'id';
         $shaped = [];
         foreach ($rawRows as $row) {
             $val   = (float) $row['value'];
@@ -68,8 +70,8 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
                 'share_pct' => $total > 0 ? round(($val / $total) * 100.0, 2) : 0.0,
                 'link_id'   => isset($row['link_id']) && $row['link_id'] !== null ? (int) $row['link_id'] : null,
             ];
-            if ($linkBase && $entry['link_id']) {
-                $entry['link_url'] = '/admin/' . $linkBase . $entry['link_id'];
+            if ($linkRoute && $entry['link_id']) {
+                $entry['link_url'] = $this->buildAdminUrl($linkRoute, [$linkParam => $entry['link_id']]);
             }
             $shaped[] = $entry;
         }

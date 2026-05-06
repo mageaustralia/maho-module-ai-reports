@@ -22,7 +22,7 @@ class MageAustralia_AiReports_Block_Adminhtml_Ask extends Mage_Adminhtml_Block_T
             ['label' => 'Stock vs sales', 'prompt' => 'For our top 50 sellers over the last 90 days, show stock on hand and days of cover.'],
             ['label' => 'Growth last 6 months', 'prompt' => 'Which products had the biggest growth comparing the last 3 months to the previous 3 months?'],
             ['label' => 'Low stock alerts', 'prompt' => 'Which products have less than 14 days of stock cover based on the last 30 days of sales?'],
-            ['label' => 'Revenue by category', 'prompt' => 'Break down revenue by category for last month.'],
+            ['label' => 'Revenue by store', 'prompt' => 'Break down revenue by store for last month.'],
             ['label' => 'Daily revenue', 'prompt' => 'Show daily revenue for the last 30 days.'],
         ];
     }

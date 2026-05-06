@@ -5,6 +5,7 @@ declare(strict_types=1);
 class MageAustralia_AiReports_Model_Primitive_TopN
     implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
+    use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
     public function getName(): string { return 'top_n'; }
 
     public function getDescription(): string
@@ -21,7 +22,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             'additionalProperties' => false,
             'properties'           => [
                 'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count', 'aov', 'margin']],
-                'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'category', 'brand', 'customer', 'store', 'order_status']],
+                'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'customer', 'store', 'order_status']],
                 'period'    => ['type' => 'object'],
                 'limit'     => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
                 'store_ids' => [
@@ -118,6 +119,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         };
     }
 
+    // TODO(v1.1): implement real category join through catalog_category_product to get category_name.
     private function categoryExprs(Mage_Core_Model_Resource $r): array
     {
         // Resolved at staging - join through catalog_category_product to get category_name.
@@ -129,6 +131,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         ];
     }
 
+    // TODO(v1.1): implement real brand join once brand attribute code is confirmed.
     private function brandExprs(Mage_Core_Model_Resource $r): array
     {
         // Same caveat as category - placeholder uses product. Replace during integration once
@@ -147,12 +150,13 @@ class MageAustralia_AiReports_Model_Primitive_TopN
     public function shapeRows(array $rawRows, string $dimension): array
     {
         $shaped = [];
-        $linkBase = match ($dimension) {
-            'product', 'sku', 'category', 'brand' => 'catalog_product/edit/id/',
-            'customer'                             => 'customer/edit/id/',
-            'store'                                => 'system_store/editStore/store_id/',
+        $linkRoute = match ($dimension) {
+            'product', 'sku', 'category', 'brand' => 'adminhtml/catalog_product/edit',
+            'customer'                             => 'adminhtml/customer/edit',
+            'store'                                => 'adminhtml/system_store/editStore',
             default                                => null,
         };
+        $linkParam = $dimension === 'store' ? 'store_id' : 'id';
         foreach ($rawRows as $row) {
             $linkId = isset($row['link_id']) ? (int) $row['link_id'] : null;
             if (is_numeric($row['value'])) {
@@ -166,8 +170,8 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                 'value'   => $value,
                 'link_id' => $linkId,
             ];
-            if ($linkBase && $linkId) {
-                $entry['link_url'] = '/admin/' . $linkBase . $linkId;
+            if ($linkRoute && $linkId) {
+                $entry['link_url'] = $this->buildAdminUrl($linkRoute, [$linkParam => $linkId]);
             }
             $shaped[] = $entry;
         }

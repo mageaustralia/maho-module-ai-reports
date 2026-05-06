@@ -23,7 +23,7 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
                 'metric'      => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count', 'aov']],
                 'period'      => ['type' => 'object'],
                 'granularity' => ['type' => 'string', 'enum' => ['day', 'week', 'month']],
-                'group_by'    => ['type' => ['string', 'null'], 'enum' => ['product', 'category', 'store', null]],
+                'group_by'    => ['type' => ['string', 'null'], 'enum' => ['product', 'store', null]],
                 'store_ids'   => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],
             ],
         ];

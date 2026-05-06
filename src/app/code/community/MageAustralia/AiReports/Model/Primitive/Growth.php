@@ -5,6 +5,7 @@ declare(strict_types=1);
 class MageAustralia_AiReports_Model_Primitive_Growth
     implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
+    use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
     public function getName(): string { return 'growth'; }
 
     public function getDescription(): string
@@ -21,7 +22,7 @@ class MageAustralia_AiReports_Model_Primitive_Growth
             'additionalProperties' => false,
             'properties' => [
                 'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count', 'aov', 'margin']],
-                'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'category', 'brand', 'customer', 'store']],
+                'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'customer', 'store']],
                 'period_a'  => ['type' => 'object'],
                 'period_b'  => ['type' => 'object'],
                 'limit'     => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
@@ -72,12 +73,13 @@ class MageAustralia_AiReports_Model_Primitive_Growth
      */
     public function shapeRows(array $rawRows, string $dimension): array
     {
-        $linkBase = match ($dimension) {
-            'product', 'sku', 'category', 'brand' => 'catalog_product/edit/id/',
-            'customer'                             => 'customer/edit/id/',
-            'store'                                => 'system_store/editStore/store_id/',
+        $linkRoute = match ($dimension) {
+            'product', 'sku', 'category', 'brand' => 'adminhtml/catalog_product/edit',
+            'customer'                             => 'adminhtml/customer/edit',
+            'store'                                => 'adminhtml/system_store/editStore',
             default                                => null,
         };
+        $linkParam = $dimension === 'store' ? 'store_id' : 'id';
 
         $shaped = [];
         foreach ($rawRows as $row) {
@@ -94,8 +96,8 @@ class MageAustralia_AiReports_Model_Primitive_Growth
                 'delta_abs' => $deltaAbs,
                 'delta_pct' => $deltaPct,
             ];
-            if ($linkBase && $entry['link_id']) {
-                $entry['link_url'] = '/admin/' . $linkBase . $entry['link_id'];
+            if ($linkRoute && $entry['link_id']) {
+                $entry['link_url'] = $this->buildAdminUrl($linkRoute, [$linkParam => $entry['link_id']]);
             }
             $shaped[] = $entry;
         }

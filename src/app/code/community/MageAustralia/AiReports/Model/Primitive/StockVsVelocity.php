@@ -5,6 +5,7 @@ declare(strict_types=1);
 class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
     implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
+    use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
     public function getName(): string { return 'stock_vs_velocity'; }
 
     public function getDescription(): string
@@ -154,7 +155,7 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
                 'link_id'        => isset($row['product_id']) ? (int) $row['product_id'] : null,
             ];
             if ($entry['link_id']) {
-                $entry['link_url'] = '/admin/catalog_product/edit/id/' . $entry['link_id'];
+                $entry['link_url'] = $this->buildAdminUrl('adminhtml/catalog_product/edit', ['id' => $entry['link_id']]);
             }
             $shaped[] = $entry;
         }
