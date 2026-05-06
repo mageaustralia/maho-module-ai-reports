@@ -21,7 +21,7 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
             'additionalProperties' => false,
             'properties'           => [
                 'metric'      => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count', 'aov']],
-                'period'      => ['type' => 'object'],
+                'period'      => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'granularity' => ['type' => 'string', 'enum' => ['day', 'week', 'month']],
                 'group_by'    => ['type' => ['string', 'null'], 'enum' => ['product', 'store', null]],
                 'store_ids'   => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],

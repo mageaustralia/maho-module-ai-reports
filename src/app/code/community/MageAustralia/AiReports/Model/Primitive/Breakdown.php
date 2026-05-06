@@ -23,7 +23,7 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
             'properties'           => [
                 'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count']],
                 'dimension' => ['type' => 'string', 'enum' => ['product', 'store', 'order_status']],
-                'period'    => ['type' => 'object'],
+                'period'    => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'store_ids' => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],
             ],
         ];

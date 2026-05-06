@@ -23,7 +23,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             'properties'           => [
                 'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count', 'aov', 'margin']],
                 'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'customer', 'store', 'order_status']],
-                'period'    => ['type' => 'object'],
+                'period'    => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'limit'     => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
                 'store_ids' => [
                     'type'  => ['array', 'null'],

@@ -28,7 +28,7 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
                         ['required' => ['type', 'n', 'period'], 'properties' => [
                             'type' => ['const' => 'top_n_sellers'],
                             'n'    => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
-                            'period' => ['type' => 'object'],
+                            'period' => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                         ]],
                         ['required' => ['type', 'values'], 'properties' => [
                             'type'   => ['const' => 'skus'],

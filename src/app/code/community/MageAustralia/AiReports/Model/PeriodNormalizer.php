@@ -103,4 +103,35 @@ class MageAustralia_AiReports_Model_PeriodNormalizer
             'last_7_days', 'last_30_days', 'last_90_days', 'last_180_days', 'last_365_days',
         ];
     }
+
+    /**
+     * JSON Schema (draft-07) describing a valid period struct.
+     *
+     * @return array<string, mixed>
+     */
+    public static function schema(): array
+    {
+        return [
+            'type'  => 'object',
+            'oneOf' => [
+                [
+                    'required'   => ['type', 'value'],
+                    'properties' => [
+                        'type'  => ['const' => 'relative'],
+                        'value' => ['type' => 'string', 'enum' => self::relativeKeys()],
+                    ],
+                    'additionalProperties' => false,
+                ],
+                [
+                    'required'   => ['type', 'from', 'to'],
+                    'properties' => [
+                        'type' => ['const' => 'absolute'],
+                        'from' => ['type' => 'string', 'pattern' => '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'],
+                        'to'   => ['type' => 'string', 'pattern' => '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'],
+                    ],
+                    'additionalProperties' => false,
+                ],
+            ],
+        ];
+    }
 }
