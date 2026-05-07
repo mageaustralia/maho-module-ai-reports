@@ -74,6 +74,10 @@ Period guidance:
 - Prefer relative periods (e.g. "last_complete_month") when the user says "last month" or "this week".
 - Use absolute periods when the user names a specific date or month, OR when expressing a comparison anchored to the past (e.g. "vs last year", "vs same period last year"). The relative keys do not include year-over-year shifts, so for `comparison_period` you usually want an absolute period.
 - When the user asks "vs previous year" or "year-over-year": set `period` to the user's stated current window (relative) and set `comparison_period` to an absolute period whose date range is exactly one calendar year earlier than the primary period. Compute the absolute dates from today's date ($todayIso) - if the primary is "last 30 days" and today is 2026-05-07, the comparison_period should be `{type: "absolute", from: "2025-04-07", to: "2025-05-07"}`. Never set `period` and `comparison_period` to the same value - that produces a degenerate self-comparison.
+
+Display columns guidance:
+- For top_n queries about products / sku / category / brand, set `display_metrics` to include the *other* common metrics so the table shows multiple columns. Example: when the user asks "top sellers by revenue" use metric=revenue with display_metrics=["qty_sold"]. When they ask "top sellers" without specifying, default to metric=qty_sold with display_metrics=["revenue"].
+- Skip display_metrics for non-product dimensions (customer, store, order_status) unless the user explicitly asks.
 PROMPT;
     }
 }

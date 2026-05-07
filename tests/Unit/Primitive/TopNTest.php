@@ -30,6 +30,9 @@ final class TopNTest extends TestCase
             $schema['properties']['dimension']['enum']);
         $this->assertSame(1, $schema['properties']['limit']['minimum']);
         $this->assertSame(200, $schema['properties']['limit']['maximum']);
+        $this->assertArrayHasKey('display_metrics', $schema['properties']);
+        $this->assertSame(['array', 'null'], $schema['properties']['display_metrics']['type']);
+        $this->assertSame(4, $schema['properties']['display_metrics']['maxItems']);
     }
 
     public function testDefaultRender(): void
@@ -59,5 +62,16 @@ final class TopNTest extends TestCase
             dimension: 'order_status',
         );
         $this->assertArrayNotHasKey('link_url', $rows[0]);
+    }
+
+    public function testShapeRowsEmitsExtraMetricColumns(): void
+    {
+        $rows = (new TopN())->shapeRows(
+            [['label' => 'Wilson Pro', 'value' => '234', 'link_id' => '4321', 'revenue' => '12345.67', 'qty_sold' => '99']],
+            dimension: 'product',
+        );
+        $this->assertSame(234, $rows[0]['value']);
+        $this->assertSame(12345.67, $rows[0]['revenue']);
+        $this->assertSame(99, $rows[0]['qty_sold']);
     }
 }

@@ -41,6 +41,12 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                     'items'       => ['type' => 'integer'],
                     'description' => 'Optional list of product IDs to filter results to (for queries about specific products).',
                 ],
+                'display_metrics' => [
+                    'type'        => ['array', 'null'],
+                    'items'       => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count', 'aov', 'margin']],
+                    'description' => 'Additional metric columns to show alongside the sort metric. The `metric` arg still determines the sort order; these are display-only.',
+                    'maxItems'    => 4,
+                ],
             ],
         ];
     }
@@ -70,13 +76,13 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         $orderItem = $r->getTableName('sales/order_item');
         $order     = $r->getTableName('sales/order');
 
-        $valueExpr = match ($args['metric']) {
+        $valueExprs = [
             'qty_sold'    => 'SUM(oi.qty_ordered)',
             'revenue'     => 'SUM(oi.row_total - oi.discount_amount)',
             'order_count' => 'COUNT(DISTINCT o.entity_id)',
             'aov'         => 'SUM(o.grand_total) / NULLIF(COUNT(DISTINCT o.entity_id), 0)',
             'margin'      => 'SUM(oi.row_total - oi.discount_amount - (oi.qty_ordered * oi.base_cost))',
-        };
+        ];
 
         $dimensionExprs = $this->dimensionExprs($r, $args['dimension']);
 
@@ -88,12 +94,21 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             $select->joinLeft(['cs' => $r->getTableName('core/store')], 'cs.store_id = o.store_id', []);
         }
 
+        $columns = [
+            'label'   => $dimensionExprs['label'],
+            'link_id' => $dimensionExprs['link_id'],
+            'value'   => new Maho\Db\Expr($valueExprs[$args['metric']]),
+        ];
+
+        $extras = $args['display_metrics'] ?? [];
+        foreach ($extras as $extra) {
+            if ($extra === $args['metric']) continue;
+            if (!isset($valueExprs[$extra])) continue;
+            $columns[$extra] = new Maho\Db\Expr($valueExprs[$extra]);
+        }
+
         $select
-            ->columns([
-                'label'   => $dimensionExprs['label'],
-                'link_id' => $dimensionExprs['link_id'],
-                'value'   => new Maho\Db\Expr($valueExpr),
-            ])
+            ->columns($columns)
             ->where('o.created_at >= ?', $period['from'])
             ->where('o.created_at <= ?', $period['to'])
             ->where('o.state NOT IN (?)', ['canceled', 'closed'])
@@ -178,25 +193,34 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             'store'                                => 'adminhtml/system_store/editStore',
             default                                => null,
         };
-        $linkParam = $dimension === 'store' ? 'store_id' : 'id';
+        $linkParam  = $dimension === 'store' ? 'store_id' : 'id';
+        $metricKeys = ['qty_sold', 'revenue', 'order_count', 'aov', 'margin'];
         foreach ($rawRows as $row) {
             $linkId = isset($row['link_id']) ? (int) $row['link_id'] : null;
-            if (is_numeric($row['value'])) {
-                $floatVal = (float) $row['value'];
-                $value = ($floatVal === floor($floatVal)) ? (int) $floatVal : $floatVal;
-            } else {
-                $value = 0;
-            }
-            $entry = [
+            $entry  = [
                 'label'   => (string) $row['label'],
-                'value'   => $value,
+                'value'   => $this->castNumeric($row['value']),
                 'link_id' => $linkId,
             ];
+            foreach ($metricKeys as $mk) {
+                if (array_key_exists($mk, $row)) {
+                    $entry[$mk] = $this->castNumeric($row[$mk]);
+                }
+            }
             if ($linkRoute && $linkId) {
                 $entry['link_url'] = $this->buildAdminUrl($linkRoute, [$linkParam => $linkId]);
             }
             $shaped[] = $entry;
         }
         return $shaped;
+    }
+
+    private function castNumeric(mixed $raw): int|float
+    {
+        if (!is_numeric($raw)) {
+            return 0;
+        }
+        $float = (float) $raw;
+        return ($float === floor($float)) ? (int) $float : $float;
     }
 }
