@@ -17,13 +17,13 @@
         </reference>
     </adminhtml_aireports_saved>
 
-    <adminhtml_aireports_savedGrid>
+    <adminhtml_aireports_savedgrid>
         <block type="core/text_list" name="root" output="toHtml">
             <block type="aireports/adminhtml_saved_grid" name="aireports.saved.grid"/>
         </block>
-    </adminhtml_aireports_savedGrid>
+    </adminhtml_aireports_savedgrid>
 
-    <adminhtml_aireports_viewSaved>
+    <adminhtml_aireports_viewsaved>
         <reference name="head">
             <action method="addCss"><name>AiReports/ai-reports.css</name></action>
             <action method="addItem"><type>skin_js</type><name>AiReports/vendor/chart.umd.min.js</name></action>
@@ -32,5 +32,5 @@
         <reference name="content">
             <block type="aireports/adminhtml_savedView" name="aireports.savedView" template="mageaustralia/aireports/saved_view.phtml"/>
         </reference>
-    </adminhtml_aireports_viewSaved>
+    </adminhtml_aireports_viewsaved>
 </layout>
