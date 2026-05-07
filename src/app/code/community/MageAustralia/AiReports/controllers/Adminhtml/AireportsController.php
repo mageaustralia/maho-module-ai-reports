@@ -23,7 +23,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
     public function askAction(): void
     {
         $this->loadLayout();
-        $this->_setActiveMenu('aireports');
+        $this->_setActiveMenu('report/aireports');
         $this->_title($this->__('AI Reports'))->_title($this->__('Ask'));
         $this->renderLayout();
     }
@@ -104,7 +104,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
     public function savedAction(): void
     {
         $this->loadLayout();
-        $this->_setActiveMenu('aireports');
+        $this->_setActiveMenu('report/aireports');
         $this->_title($this->__('AI Reports'))->_title($this->__('Saved Reports'));
         $this->renderLayout();
     }
@@ -130,7 +130,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         Mage::register('aireports_current_report', $report);
 
         $this->loadLayout();
-        $this->_setActiveMenu('aireports/saved');
+        $this->_setActiveMenu('report/aireports/saved');
         $this->_title($this->__('AI Reports'))
              ->_title($this->__('Saved Reports'))
              ->_title($report->getTitle());
