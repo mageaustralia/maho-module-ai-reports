@@ -15,6 +15,8 @@ class MageAustralia_AiReports_Block_Adminhtml_SavedView extends Mage_Adminhtml_B
     {
         parent::__construct();
 
+        $this->setTemplate('mageaustralia/aireports/saved_view_container.phtml');
+
         $this->_addButton('back', [
             'label'   => $this->__('Back'),
             'onclick' => "setLocation('" . $this->getBackUrl() . "')",
