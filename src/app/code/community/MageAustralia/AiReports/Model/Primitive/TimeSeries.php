@@ -35,6 +35,11 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
                 'granularity'       => ['type' => 'string', 'enum' => ['day', 'week', 'month']],
                 'group_by'          => ['type' => ['string', 'null'], 'enum' => ['product', 'store', null]],
                 'store_ids'         => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],
+                'product_ids'       => [
+                    'type'        => ['array', 'null'],
+                    'items'       => ['type' => 'integer'],
+                    'description' => 'Optional list of product IDs to filter results to (for queries about specific products).',
+                ],
             ],
         ];
     }
@@ -109,6 +114,10 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
 
         if (!empty($scopeStoreIds)) {
             $select->where('o.store_id IN (?)', $scopeStoreIds);
+        }
+
+        if (!empty($args['product_ids'])) {
+            $select->where('oi.product_id IN (?)', $args['product_ids']);
         }
 
         return $conn->fetchAll($select);

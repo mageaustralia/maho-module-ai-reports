@@ -14,3 +14,12 @@ spl_autoload_register(function (string $class): void {
         require $path;
     }
 });
+
+// Minimal stub so Helper classes that extend Mage_Core_Helper_Abstract can be
+// loaded without a full Mage bootstrap in unit tests.
+if (!class_exists('Mage_Core_Helper_Abstract')) {
+    class Mage_Core_Helper_Abstract
+    {
+        public function __(): string { return ''; }
+    }
+}

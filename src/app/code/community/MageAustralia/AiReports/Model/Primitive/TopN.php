@@ -32,9 +32,14 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                 'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'customer', 'store', 'order_status']],
                 'period'    => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'limit'     => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
-                'store_ids' => [
+                'store_ids'   => [
                     'type'  => ['array', 'null'],
                     'items' => ['type' => 'integer'],
+                ],
+                'product_ids' => [
+                    'type'        => ['array', 'null'],
+                    'items'       => ['type' => 'integer'],
+                    'description' => 'Optional list of product IDs to filter results to (for queries about specific products).',
                 ],
             ],
         ];
@@ -98,6 +103,10 @@ class MageAustralia_AiReports_Model_Primitive_TopN
 
         if (!empty($scopeStoreIds)) {
             $select->where('o.store_id IN (?)', $scopeStoreIds);
+        }
+
+        if (!empty($args['product_ids'])) {
+            $select->where('oi.product_id IN (?)', $args['product_ids']);
         }
 
         return $select;

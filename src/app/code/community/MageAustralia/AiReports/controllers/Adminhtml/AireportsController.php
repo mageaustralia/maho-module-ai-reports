@@ -45,12 +45,18 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
                 return;
             }
 
-            $stores  = $helper->getUserAccessibleStoreIds();
+            $stores   = $helper->getUserAccessibleStoreIds();
+            $storeId  = (int) Mage::app()->getStore()->getId();
+
+            /** @var MageAustralia_AiReports_Helper_ProductResolver $resolver */
+            $resolver = Mage::helper('aireports/productResolver');
+            $resolved = $resolver->resolve($question, $storeId);
+
             $builder = new MageAustralia_AiReports_Model_PromptBuilder(
                 $helper->getRegistry(),
                 new \DateTimeImmutable('today'),
             );
-            $systemPrompt = $builder->build($stores);
+            $systemPrompt = $builder->build($stores, $resolved);
 
             $tStart = microtime(true);
             $valid  = $this->_generatePlan($question, $systemPrompt, $stores);
@@ -66,12 +72,14 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             $helper->recordInvoke();
 
             $userId = (int) (Mage::getSingleton('admin/session')->getUser()?->getId() ?? 0);
+            $resolvedIds = array_map(fn ($p) => $p['id'] . ':' . $p['name'], $resolved);
             Mage::log(
                 sprintf(
-                    'AiReports generate: user_id=%d elapsed_ms=%d row_count=%d q=%s plan=%s',
+                    'AiReports generate: user_id=%d elapsed_ms=%d row_count=%d resolved_products=[%s] q=%s plan=%s',
                     $userId,
                     $elapsedMs,
                     $envelope['meta']['row_count'] ?? 0,
+                    implode(', ', $resolvedIds),
                     substr($question, 0, 200),
                     json_encode($valid['plan'], JSON_UNESCAPED_SLASHES),
                 ),

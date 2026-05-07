@@ -16,8 +16,11 @@ class MageAustralia_AiReports_Model_PromptBuilder
         private \DateTimeImmutable $today,
     ) {}
 
-    /** @param int[] $userAccessibleStoreIds */
-    public function build(array $userAccessibleStoreIds): string
+    /**
+     * @param int[]                                              $userAccessibleStoreIds
+     * @param array<int, array{id: int, name: string, similarity: float}> $resolvedProducts
+     */
+    public function build(array $userAccessibleStoreIds, array $resolvedProducts = []): string
     {
         $todayIso = $this->today->format('Y-m-d');
         $stores   = implode(', ', $userAccessibleStoreIds);
@@ -31,11 +34,26 @@ class MageAustralia_AiReports_Model_PromptBuilder
             $catalog .= "\n```\n\n";
         }
 
+        $productSection = '';
+        if (!empty($resolvedProducts)) {
+            $lines = [];
+            foreach ($resolvedProducts as $p) {
+                $lines[] = '- ' . $p['name'] . ' (id=' . $p['id'] . ')';
+            }
+            $productList    = implode("\n", $lines);
+            $productSection = <<<PRODUCTS
+
+Resolved product mentions (the user may be asking about these specific products - use the `product_ids` arg if your query is about them, otherwise ignore):
+$productList
+
+PRODUCTS;
+        }
+
         return <<<PROMPT
 You are a reporting assistant for an e-commerce admin. Your job is to translate the user's natural-language question into a structured query plan that selects exactly one of the available primitives below.
 
 Today's date is $todayIso. The user has access to stores with IDs: $stores. If the user does not specify a store, leave store_ids null (the system will scope to the user's allowed stores).
-
+$productSection
 Available primitives:
 
 $catalog

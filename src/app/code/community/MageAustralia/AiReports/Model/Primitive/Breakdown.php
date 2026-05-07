@@ -31,7 +31,12 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
                 'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count']],
                 'dimension' => ['type' => 'string', 'enum' => ['product', 'store', 'order_status']],
                 'period'    => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
-                'store_ids' => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],
+                'store_ids'   => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],
+                'product_ids' => [
+                    'type'        => ['array', 'null'],
+                    'items'       => ['type' => 'integer'],
+                    'description' => 'Optional list of product IDs to filter results to (for queries about specific products).',
+                ],
             ],
         ];
     }
