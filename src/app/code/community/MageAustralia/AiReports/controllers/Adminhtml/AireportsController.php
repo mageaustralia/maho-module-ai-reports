@@ -98,6 +98,12 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         $this->renderLayout();
     }
 
+    public function savedGridAction(): void
+    {
+        $this->loadLayout();
+        $this->renderLayout();
+    }
+
     public function viewSavedAction(): void
     {
         $reportId = (int) $this->getRequest()->getParam('id');
