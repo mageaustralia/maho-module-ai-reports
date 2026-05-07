@@ -439,44 +439,22 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
     }
 
     /**
-     * GET - return JSON list of last 50 run-log entries for a report.
+     * GET/AJAX - render the run-log grid (sort, filter, pagination).
+     * Used by the Run History tab grid widget.
      * ACL: aireports/run
      */
-    #[\Maho\Config\Route('/admin/aireports/runLog')]
-    public function runLogAction(): void
+    #[\Maho\Config\Route('/admin/aireports/runlog')]
+    public function runlogAction(): void
     {
-        try {
-            $reportId = (int) $this->getRequest()->getParam('id');
-            if (!$reportId) {
-                $this->_jsonError('id is required.');
-                return;
-            }
-
-            /** @var MageAustralia_AiReports_Model_Resource_RunLog_Collection $collection */
-            $collection = Mage::getResourceModel('aireports/run_log_collection')
-                ->addFieldToFilter('report_id', $reportId)
-                ->setOrder('log_id', 'DESC')
-                ->setPageSize(50);
-
-            $logs = [];
-            foreach ($collection as $log) {
-                $logs[] = [
-                    'log_id'        => (int) $log->getId(),
-                    'triggered_by'  => $log->getData('triggered_by'),
-                    'started_at'    => $log->getData('started_at'),
-                    'elapsed_ms'    => (int) $log->getData('elapsed_ms'),
-                    'row_count'     => (int) $log->getData('row_count'),
-                    'status'        => $log->getData('status'),
-                    'error_message' => $log->getData('error_message'),
-                    'email_sent_to' => $log->getData('email_sent_to'),
-                ];
-            }
-
-            $this->_jsonSuccess(['logs' => $logs]);
-        } catch (\Throwable $e) {
-            Mage::log('AiReports runLog error: ' . $e->getMessage(), Mage::LOG_ERROR, 'aireports.log');
-            $this->_jsonError($e->getMessage());
+        $reportId = (int) $this->getRequest()->getParam('id');
+        $report = Mage::getModel('aireports/report')->load($reportId);
+        if (!$report->getId()) {
+            $this->_jsonError('Report not found.');
+            return;
         }
+        Mage::register('aireports_current_report', $report);
+        $this->loadLayout();
+        $this->renderLayout();
     }
 
     #[\Maho\Config\Route('/admin/aireports/rename')]

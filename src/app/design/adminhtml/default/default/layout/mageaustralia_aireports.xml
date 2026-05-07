@@ -31,8 +31,14 @@
         </reference>
         <reference name="content">
             <block type="aireports/adminhtml_savedView" name="aireports.savedView">
-                <block type="aireports/adminhtml_savedView_content" name="aireports.savedView.content" template="mageaustralia/aireports/saved_view.phtml" as="content"/>
+                <block type="aireports/adminhtml_savedView_tabs" name="aireports.savedView.tabs" as="tabs"/>
             </block>
         </reference>
     </adminhtml_aireports_viewsaved>
+
+    <adminhtml_aireports_runlog>
+        <block type="core/text_list" name="root" output="toHtml">
+            <block type="aireports/adminhtml_savedView_tab_runLog" name="aireports.savedView.tab.runLog"/>
+        </block>
+    </adminhtml_aireports_runlog>
 </layout>

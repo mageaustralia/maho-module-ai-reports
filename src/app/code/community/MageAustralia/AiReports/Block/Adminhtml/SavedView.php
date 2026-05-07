@@ -35,12 +35,6 @@ class MageAustralia_AiReports_Block_Adminhtml_SavedView extends Mage_Adminhtml_B
         ]);
 
         if ($this->canManage()) {
-            $this->_addButton('schedule', [
-                'label'   => $this->__('Schedule'),
-                'onclick' => 'aireportsSavedView.openSchedule()',
-                'class'   => 'add',
-            ]);
-
             $this->_addButton('rename', [
                 'label'   => $this->__('Rename'),
                 'onclick' => 'aireportsSavedView.rename()',
@@ -67,12 +61,8 @@ class MageAustralia_AiReports_Block_Adminhtml_SavedView extends Mage_Adminhtml_B
     }
 
     public function getBackUrl(): string     { return $this->getUrl('adminhtml/aireports/saved'); }
-    public function getRunUrl(): string      { return $this->getUrl('adminhtml/aireports/runSaved'); }
-    public function getExportUrl(): string   { return $this->getUrl('adminhtml/aireports/exportSavedCsv'); }
     public function getRenameUrl(): string   { return $this->getUrl('adminhtml/aireports/rename'); }
     public function getDeleteUrl(): string   { return $this->getUrl('adminhtml/aireports/delete'); }
-    public function getScheduleUrl(): string { return $this->getUrl('adminhtml/aireports/schedule'); }
-    public function getRunLogUrl(): string   { return $this->getUrl('adminhtml/aireports/runLog'); }
 
     public function canManage(): bool
     {

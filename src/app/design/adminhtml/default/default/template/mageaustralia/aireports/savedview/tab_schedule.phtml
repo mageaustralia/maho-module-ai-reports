@@ -1,0 +1,101 @@
+<?php /** @var MageAustralia_AiReports_Block_Adminhtml_SavedView_Tab_Schedule $this */ ?>
+<?php $report = $this->getReport(); ?>
+<div class="aireports-schedule-tab"
+     data-schedule-tab
+     data-report-id="<?= (int) $report->getId() ?>"
+     data-schedule-url="<?= $this->escapeUrl($this->getScheduleUrl()) ?>"
+     data-schedule-enabled="<?= (int) $report->getData('schedule_enabled') ?>"
+     data-schedule-cron-expr="<?= $this->escapeHtml((string) $report->getData('schedule_cron_expr')) ?>"
+     data-email-recipients="<?= $this->escapeHtml((string) $report->getData('email_recipients')) ?>"
+     data-email-subject-prefix="<?= $this->escapeHtml((string) $report->getData('email_subject_prefix')) ?>">
+
+    <div class="aireports-schedule__field">
+        <label for="aireports-tab-schedule-enabled">
+            <input type="checkbox" id="aireports-tab-schedule-enabled"
+                   data-schedule-enabled value="1"
+                   <?= $report->getData('schedule_enabled') ? 'checked="checked"' : '' ?>>
+            <?= $this->__('Enable scheduled runs') ?>
+        </label>
+    </div>
+
+    <div class="aireports-schedule__field">
+        <label for="aireports-tab-cron-expr"><?= $this->__('Cron expression') ?></label>
+        <input type="text" id="aireports-tab-cron-expr" data-schedule-cron-expr
+               value="<?= $this->escapeHtml((string) $report->getData('schedule_cron_expr')) ?>"
+               placeholder="0 9 * * 1" style="width:14rem;">
+        <span class="aireports-schedule__hint">
+            <?= $this->__('Daily 9am:') ?> <code>0 9 * * *</code> &nbsp;
+            <?= $this->__('Mon 9am:') ?> <code>0 9 * * 1</code> &nbsp;
+            <?= $this->__('1st of month:') ?> <code>0 9 1 * *</code>
+        </span>
+    </div>
+
+    <div class="aireports-schedule__field">
+        <label for="aireports-tab-email-recipients"><?= $this->__('Email recipients') ?></label>
+        <input type="text" id="aireports-tab-email-recipients" data-email-recipients
+               value="<?= $this->escapeHtml((string) $report->getData('email_recipients')) ?>"
+               placeholder="alice@example.com, bob@example.com" style="width:28rem;">
+        <span class="aireports-schedule__hint"><?= $this->__('Comma-separated email addresses') ?></span>
+    </div>
+
+    <div class="aireports-schedule__field">
+        <label for="aireports-tab-email-prefix"><?= $this->__('Subject prefix') ?></label>
+        <input type="text" id="aireports-tab-email-prefix" data-email-subject-prefix
+               value="<?= $this->escapeHtml((string) $report->getData('email_subject_prefix')) ?>"
+               placeholder="<?= $this->escapeHtml($this->__('e.g. Daily')) ?>" style="width:14rem;">
+        <span class="aireports-schedule__hint"><?= $this->__('Optional - appears in [brackets] before the report title') ?></span>
+    </div>
+
+    <div class="aireports-schedule__actions">
+        <button type="button" class="scalable save" data-schedule-tab-save>
+            <?= $this->__('Save Schedule') ?>
+        </button>
+    </div>
+    <div class="aireports-schedule__status" data-schedule-tab-status style="display:none;margin-top:0.5rem;"></div>
+</div>
+<script>
+(function () {
+    'use strict';
+    function initScheduleTab() {
+        var root = document.querySelector('[data-schedule-tab]');
+        if (!root) return;
+        var saveBtn = root.querySelector('[data-schedule-tab-save]');
+        var statusEl = root.querySelector('[data-schedule-tab-status]');
+        if (!saveBtn) return;
+        saveBtn.addEventListener('click', function () {
+            var payload = {
+                id:                   root.dataset.reportId,
+                schedule_enabled:     root.querySelector('[data-schedule-enabled]').checked ? '1' : '0',
+                schedule_cron_expr:   root.querySelector('[data-schedule-cron-expr]').value.trim(),
+                email_recipients:     root.querySelector('[data-email-recipients]').value.trim(),
+                email_subject_prefix: root.querySelector('[data-email-subject-prefix]').value.trim(),
+            };
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            statusEl.style.display = 'none';
+            AiReportsUtil.postForm(root.dataset.scheduleUrl, payload).then(function (data) {
+                if (data.success) {
+                    statusEl.className = 'aireports-schedule__status aireports-schedule__status--ok';
+                    statusEl.textContent = 'Schedule saved.';
+                } else {
+                    statusEl.className = 'aireports-schedule__status aireports-schedule__status--err';
+                    statusEl.textContent = 'Error: ' + (data.message || 'Unknown error');
+                }
+                statusEl.style.display = '';
+            }).catch(function (err) {
+                statusEl.className = 'aireports-schedule__status aireports-schedule__status--err';
+                statusEl.textContent = 'Error: ' + err.message;
+                statusEl.style.display = '';
+            }).finally(function () {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Schedule';
+            });
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initScheduleTab);
+    } else {
+        initScheduleTab();
+    }
+})();
+</script>

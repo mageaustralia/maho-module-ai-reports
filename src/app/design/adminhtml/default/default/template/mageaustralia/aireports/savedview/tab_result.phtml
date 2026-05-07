@@ -1,0 +1,22 @@
+<?php /** @var MageAustralia_AiReports_Block_Adminhtml_SavedView_Tab_Result $this */ ?>
+<?php $report = $this->getReport(); ?>
+<script>window.FORM_KEY = <?= json_encode($this->getFormKey()) ?>;</script>
+<div class="aireports-savedview"
+     data-report-id="<?= (int) $report->getId() ?>"
+     data-run-url="<?= $this->escapeUrl($this->getRunUrl()) ?>"
+     data-export-url="<?= $this->escapeUrl($this->getExportUrl()) ?>"
+     data-rename-url="<?= $this->escapeUrl($this->getRenameUrl()) ?>"
+     data-delete-url="<?= $this->escapeUrl($this->getDeleteUrl()) ?>"
+     data-back-url="<?= $this->escapeUrl($this->getBackUrl()) ?>">
+    <p class="aireports-savedview__meta">
+        <?= $this->__('Last run:') ?> <?= $report->getData('last_run_at') ? $this->escapeHtml($report->getData('last_run_at')) : '-' ?>
+        &nbsp;|&nbsp;
+        <?= $this->__('Updated:') ?> <?= $this->escapeHtml($report->getData('updated_at')) ?>
+        <?php if ($report->getData('last_scheduled_at')): ?>
+            &nbsp;|&nbsp;
+            <?= $this->__('Last scheduled:') ?> <?= $this->escapeHtml($report->getData('last_scheduled_at')) ?>
+            (<?= $this->escapeHtml((string) $report->getData('last_scheduled_status')) ?>)
+        <?php endif; ?>
+    </p>
+    <div class="aireports-savedview__result" data-aireports-result></div>
+</div>
