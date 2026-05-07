@@ -70,12 +70,4 @@
             </updates>
         </layout>
     </adminhtml>
-    <crontab>
-        <jobs>
-            <aireports_run_scheduled>
-                <schedule><cron_expr>* * * * *</cron_expr></schedule>
-                <run><model>aireports/cron::runScheduled</model></run>
-            </aireports_run_scheduled>
-        </jobs>
-    </crontab>
 </config>
