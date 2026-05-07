@@ -9,11 +9,53 @@
 
 declare(strict_types=1);
 
-class MageAustralia_AiReports_Block_Adminhtml_SavedView extends Mage_Adminhtml_Block_Template
+class MageAustralia_AiReports_Block_Adminhtml_SavedView extends Mage_Adminhtml_Block_Widget_Container
 {
-    public function getReport(): MageAustralia_AiReports_Model_Report
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->_addButton('back', [
+            'label'   => $this->__('Back'),
+            'onclick' => "setLocation('" . $this->getBackUrl() . "')",
+            'class'   => 'back',
+        ]);
+
+        $this->_addButton('rerun', [
+            'label'   => $this->__('Re-run'),
+            'onclick' => 'aireportsSavedView.rerun()',
+            'class'   => 'go',
+        ]);
+
+        $this->_addButton('export', [
+            'label'   => $this->__('Export CSV'),
+            'onclick' => 'aireportsSavedView.exportCsv()',
+        ]);
+
+        if ($this->canManage()) {
+            $this->_addButton('rename', [
+                'label'   => $this->__('Rename'),
+                'onclick' => 'aireportsSavedView.rename()',
+            ]);
+
+            $this->_addButton('delete', [
+                'label'   => $this->__('Delete'),
+                'onclick' => 'aireportsSavedView.deleteReport()',
+                'class'   => 'delete',
+            ]);
+        }
+    }
+
+    public function getReport(): ?MageAustralia_AiReports_Model_Report
     {
         return Mage::registry('aireports_current_report');
+    }
+
+    #[\Override]
+    public function getHeaderText()
+    {
+        $report = $this->getReport();
+        return $report ? $this->escapeHtml($report->getTitle()) : $this->__('Saved Report');
     }
 
     public function getBackUrl(): string   { return $this->getUrl('adminhtml/aireports/saved'); }

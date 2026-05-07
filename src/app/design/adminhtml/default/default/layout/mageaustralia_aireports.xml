@@ -30,7 +30,9 @@
             <action method="addItem"><type>skin_js</type><name>AiReports/ai-reports.js</name></action>
         </reference>
         <reference name="content">
-            <block type="aireports/adminhtml_savedView" name="aireports.savedView" template="mageaustralia/aireports/saved_view.phtml"/>
+            <block type="aireports/adminhtml_savedView" name="aireports.savedView">
+                <block type="aireports/adminhtml_savedView_content" name="aireports.savedView.content" template="mageaustralia/aireports/saved_view.phtml" as="content"/>
+            </block>
         </reference>
     </adminhtml_aireports_viewsaved>
 </layout>
