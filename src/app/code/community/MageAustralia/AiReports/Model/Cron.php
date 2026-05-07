@@ -17,7 +17,8 @@ class MageAustralia_AiReports_Model_Cron
      * current minute, execute it, write to run_log, optionally email the
      * result, and update last_scheduled_* fields.
      */
-    public function runScheduled(): void
+    #[\Maho\Config\CronJob('aireports_run_scheduled', schedule: '* * * * *')]
+    public function runScheduled(Mage_Cron_Model_Schedule $schedule): void
     {
         $now = new \DateTimeImmutable('now');
 
