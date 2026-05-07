@@ -46,8 +46,8 @@ class MageAustralia_AiReports_Helper_ProductResolver extends Mage_Core_Helper_Ab
             );
             return [];
         }
-        $questionVector = $vectors[0] ?? null;
-        if (!is_array($questionVector) || empty($questionVector)) {
+        $questionVector = self::unwrapEmbedResult($vectors);
+        if ($questionVector === null) {
             return [];
         }
 
@@ -160,6 +160,33 @@ class MageAustralia_AiReports_Helper_ProductResolver extends Mage_Core_Helper_Ab
             $names[(int) $product->getId()] = (string) $product->getName();
         }
         return $names;
+    }
+
+    /**
+     * Normalise the result of `Maho_Ai_Helper_Data::embed()` to a single float vector.
+     *
+     * The helper unwraps the outer array when called with a string input and returns
+     * `float[]` directly; called with an array of strings it returns `float[][]`.
+     * Accept both shapes here so the resolver works regardless of how the helper
+     * evolves. Returns null if the input is not a recognisable vector shape.
+     *
+     * @return float[]|null
+     */
+    public static function unwrapEmbedResult(mixed $result): ?array
+    {
+        if (!is_array($result) || empty($result)) {
+            return null;
+        }
+        $first = $result[0] ?? null;
+        if (is_array($first)) {
+            // float[][] from the array-input path - take the first vector
+            return (!empty($first) && (is_int($first[0] ?? null) || is_float($first[0] ?? null))) ? $first : null;
+        }
+        if (is_int($first) || is_float($first)) {
+            // float[] from the string-input path - already the vector
+            return $result;
+        }
+        return null;
     }
 
     /**

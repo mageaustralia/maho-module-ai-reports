@@ -76,6 +76,39 @@ final class ProductResolverMathTest extends TestCase
         $this->assertEqualsWithDelta(1.0, $similarity, 0.0001);
     }
 
+    public function testUnwrapStringInputShape(): void
+    {
+        // Helper returns float[] when called with string input
+        $vec = [0.1, 0.2, 0.3, 0.4];
+        $this->assertSame($vec, Resolver::unwrapEmbedResult($vec));
+    }
+
+    public function testUnwrapArrayInputShape(): void
+    {
+        // Helper returns float[][] when called with array input - take first vector
+        $batch = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]];
+        $this->assertSame([0.1, 0.2, 0.3], Resolver::unwrapEmbedResult($batch));
+    }
+
+    public function testUnwrapEmptyReturnsNull(): void
+    {
+        $this->assertNull(Resolver::unwrapEmbedResult([]));
+    }
+
+    public function testUnwrapNonArrayReturnsNull(): void
+    {
+        $this->assertNull(Resolver::unwrapEmbedResult(null));
+        $this->assertNull(Resolver::unwrapEmbedResult('oops'));
+    }
+
+    public function testUnwrapMalformedReturnsNull(): void
+    {
+        // Array of non-numeric, non-array values
+        $this->assertNull(Resolver::unwrapEmbedResult(['not', 'numbers']));
+        // Array containing an empty inner array
+        $this->assertNull(Resolver::unwrapEmbedResult([[]]));
+    }
+
     private function resolver(): Resolver
     {
         return new Resolver();
