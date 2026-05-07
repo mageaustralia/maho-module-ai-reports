@@ -431,15 +431,71 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         throw new \RuntimeException('Could not generate a valid report plan. ' . $lastError);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Decode the LLM's JSON plan from a raw response. Handles three shapes:
+     *   1. Pure JSON.
+     *   2. JSON wrapped in ```json fences (any position).
+     *   3. JSON embedded in prose - extract the first balanced top-level object.
+     * @return array<string, mixed>
+     */
     private function _decodePlan(string $raw): array
     {
         $stripped = preg_replace('/^```(?:json)?\s*|\s*```$/m', '', trim($raw));
         $decoded  = json_decode((string) $stripped, true);
-        if (!is_array($decoded)) {
-            throw new \InvalidArgumentException('Model returned non-JSON output.');
+        if (is_array($decoded)) {
+            return $decoded;
         }
-        return $decoded;
+
+        $extracted = $this->_extractFirstJsonObject((string) $stripped);
+        if ($extracted !== null) {
+            $decoded = json_decode($extracted, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        throw new \InvalidArgumentException('Model returned non-JSON output.');
+    }
+
+    /**
+     * Walk the string char-by-char tracking brace depth to extract the first
+     * top-level {...} block. Respects string literals so braces inside JSON
+     * strings do not count toward depth.
+     */
+    private function _extractFirstJsonObject(string $s): ?string
+    {
+        $start = strpos($s, '{');
+        if ($start === false) {
+            return null;
+        }
+        $depth = 0;
+        $inStr = false;
+        $esc   = false;
+        $len   = strlen($s);
+        for ($i = $start; $i < $len; $i++) {
+            $c = $s[$i];
+            if ($inStr) {
+                if ($esc) {
+                    $esc = false;
+                } elseif ($c === '\\') {
+                    $esc = true;
+                } elseif ($c === '"') {
+                    $inStr = false;
+                }
+                continue;
+            }
+            if ($c === '"') {
+                $inStr = true;
+            } elseif ($c === '{') {
+                $depth++;
+            } elseif ($c === '}') {
+                $depth--;
+                if ($depth === 0) {
+                    return substr($s, $start, $i - $start + 1);
+                }
+            }
+        }
+        return null;
     }
 
     private function _jsonSuccess(array $data): void

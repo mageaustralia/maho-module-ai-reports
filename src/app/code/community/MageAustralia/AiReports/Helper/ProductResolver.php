@@ -33,7 +33,11 @@ class MageAustralia_AiReports_Helper_ProductResolver extends Mage_Core_Helper_Ab
 
         // Embed the question
         try {
-            $vectors = Mage::helper('ai')->embed($question, $storeId);
+            $vectors = Mage::helper('ai')->embed(
+                text: $question,
+                storeId: $storeId,
+                consumer: 'aireports_resolver',
+            );
         } catch (\Throwable $e) {
             Mage::log(
                 'AiReports ProductResolver embed error: ' . $e->getMessage(),

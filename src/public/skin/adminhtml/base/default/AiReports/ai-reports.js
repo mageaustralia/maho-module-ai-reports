@@ -42,7 +42,12 @@ var AiReportsUtil = (function () {
 
     function renderLoading(target) {
         target.hidden = false;
-        target.innerHTML = '<div class="aireports-loading">Generating report...</div>';
+        target.innerHTML =
+            '<div class="aireports-loading">' +
+                '<span class="aireports-spinner" aria-hidden="true"></span>' +
+                '<span class="aireports-loading__text">Generating report</span>' +
+                '<span class="aireports-loading__dots"><span></span><span></span><span></span></span>' +
+            '</div>';
     }
 
     function renderError(target, msg) {
