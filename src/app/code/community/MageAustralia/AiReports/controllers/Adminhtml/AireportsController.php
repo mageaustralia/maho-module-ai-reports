@@ -19,6 +19,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         };
     }
 
+    #[\Maho\Config\Route('/admin/aireports/ask')]
     public function askAction(): void
     {
         $this->loadLayout();
@@ -27,6 +28,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         $this->renderLayout();
     }
 
+    #[\Maho\Config\Route('/admin/aireports/generate')]
     public function generateAction(): void
     {
         try {
@@ -98,6 +100,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         }
     }
 
+    #[\Maho\Config\Route('/admin/aireports/saved')]
     public function savedAction(): void
     {
         $this->loadLayout();
@@ -106,12 +109,14 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         $this->renderLayout();
     }
 
+    #[\Maho\Config\Route('/admin/aireports/savedGrid')]
     public function savedGridAction(): void
     {
         $this->loadLayout();
         $this->renderLayout();
     }
 
+    #[\Maho\Config\Route('/admin/aireports/viewSaved')]
     public function viewSavedAction(): void
     {
         $reportId = (int) $this->getRequest()->getParam('id');
@@ -132,6 +137,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         $this->renderLayout();
     }
 
+    #[\Maho\Config\Route('/admin/aireports/save')]
     public function saveAction(): void
     {
         try {
@@ -159,6 +165,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         }
     }
 
+    #[\Maho\Config\Route('/admin/aireports/runSaved')]
     public function runSavedAction(): void
     {
         try {
@@ -211,6 +218,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         }
     }
 
+    #[\Maho\Config\Route('/admin/aireports/exportCsv')]
     public function exportCsvAction(): void
     {
         try {
@@ -294,6 +302,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         }
     }
 
+    #[\Maho\Config\Route('/admin/aireports/exportSavedCsv')]
     public function exportSavedCsvAction(): void
     {
         try {
@@ -372,6 +381,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         }
     }
 
+    #[\Maho\Config\Route('/admin/aireports/rename')]
     public function renameAction(): void
     {
         try {
@@ -384,6 +394,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         }
     }
 
+    #[\Maho\Config\Route('/admin/aireports/delete')]
     public function deleteAction(): void
     {
         try {
