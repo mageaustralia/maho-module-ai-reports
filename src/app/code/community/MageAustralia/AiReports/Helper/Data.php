@@ -73,18 +73,6 @@ class MageAustralia_AiReports_Helper_Data extends Mage_Core_Helper_Abstract
         Mage::getSingleton('admin/session')->setData($key, time());
     }
 
-    /**
-     * @deprecated Use getLastInvokeTimestamp() + recordInvoke() separately so the timestamp
-     *             is only recorded after a successful invocation.
-     */
-    public function checkRateLimit(): void
-    {
-        $last = $this->getLastInvokeTimestamp();
-        if ($last && (time() - $last) < self::RATE_LIMIT_SECONDS) {
-            Mage::throwException($this->__('Please wait a few seconds before submitting another report.'));
-        }
-    }
-
     public function canSeeCustomerPii(): bool
     {
         return (bool) Mage::getSingleton('admin/session')->isAllowed('customer/manage_customers');

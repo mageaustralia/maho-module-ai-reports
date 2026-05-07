@@ -59,11 +59,11 @@ class MageAustralia_AiReports_Model_Primitive_Growth
 
         $merged = [];
         foreach ($rowsA as $row) {
-            $key = $row['link_id'] ?? $row['label'];
+            $key = $row['link_id'] !== null ? 'id:' . $row['link_id'] : 'label:' . $row['label'];
             $merged[$key] = ['label' => $row['label'], 'link_id' => $row['link_id'] ?? null, 'value_a' => $row['value'], 'value_b' => 0];
         }
         foreach ($rowsB as $row) {
-            $key = $row['link_id'] ?? $row['label'];
+            $key = $row['link_id'] !== null ? 'id:' . $row['link_id'] : 'label:' . $row['label'];
             if (!isset($merged[$key])) {
                 $merged[$key] = ['label' => $row['label'], 'link_id' => $row['link_id'] ?? null, 'value_a' => 0, 'value_b' => 0];
             }
