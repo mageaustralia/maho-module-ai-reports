@@ -1,0 +1,21 @@
+<!--@subject {{var subject_prefix}}{{var report_title}} ({{var run_date}}) @-->
+<!--@vars
+{
+"subject_prefix":"Subject prefix (e.g. [Daily] )",
+"report_title":"Report title",
+"run_date":"Run date and time (UTC)",
+"narrative":"Narrative paragraph from the AI",
+"body_html":"Pre-rendered HTML of result blocks",
+"detail_url":"Full URL to the saved-report detail page in admin"
+}
+@-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 720px; margin: 0 auto; padding: 1.5rem; color: #18181b;">
+    <h2 style="margin: 0 0 0.5rem; font-size: 1.375rem; font-weight: 700; color: #18181b;">{{var report_title}}</h2>
+    <p style="color: #71717a; font-size: 0.875rem; margin: 0 0 1rem;">Generated {{var run_date}}</p>
+    <p style="margin: 0 0 1.25rem; line-height: 1.6;">{{var narrative}}</p>
+    {{var body_html}}
+    <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid #e4e4e7;"/>
+    <p style="font-size: 0.85rem; color: #71717a; margin: 0;">
+        <a href="{{var detail_url}}" style="color: #2563eb; text-decoration: none;">View full report in admin</a>
+    </p>
+</div>

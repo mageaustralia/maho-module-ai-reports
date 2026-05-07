@@ -258,13 +258,15 @@ window.aireportsSavedView = (function () {
         root = document.querySelector('.aireports-savedview');
         if (!root) return null;
         ctx = {
-            id:        root.dataset.reportId,
-            runUrl:    root.dataset.runUrl,
-            exportUrl: root.dataset.exportUrl,
-            renameUrl: root.dataset.renameUrl,
-            deleteUrl: root.dataset.deleteUrl,
-            backUrl:   root.dataset.backUrl,
-            target:    root.querySelector('[data-aireports-result]'),
+            id:          root.dataset.reportId,
+            runUrl:      root.dataset.runUrl,
+            exportUrl:   root.dataset.exportUrl,
+            renameUrl:   root.dataset.renameUrl,
+            deleteUrl:   root.dataset.deleteUrl,
+            scheduleUrl: root.dataset.scheduleUrl,
+            runLogUrl:   root.dataset.runLogUrl,
+            backUrl:     root.dataset.backUrl,
+            target:      root.querySelector('[data-aireports-result]'),
         };
         return ctx;
     }
@@ -305,7 +307,184 @@ window.aireportsSavedView = (function () {
         window.location.href = c.backUrl;
     }
 
-    return { rerun: rerun, exportCsv: exportCsv, rename: rename, deleteReport: deleteReport };
+    function openSchedule() {
+        var c = ensure();
+        if (!c) return;
+        var scheduleSection = root.querySelector('[data-aireports-schedule]');
+        if (!scheduleSection) return;
+        var form = scheduleSection.querySelector('[data-schedule-form]');
+        var summary = scheduleSection.querySelector('[data-schedule-summary]');
+        if (!form || !summary) return;
+
+        // Populate form with current values from data attributes.
+        var enabledCb = form.querySelector('[data-schedule-enabled]');
+        var cronInput = form.querySelector('[data-schedule-cron-expr]');
+        var recipInput = form.querySelector('[data-email-recipients]');
+        var prefixInput = form.querySelector('[data-email-subject-prefix]');
+
+        if (enabledCb) enabledCb.checked = root.dataset.scheduleEnabled === '1';
+        if (cronInput) cronInput.value = root.dataset.scheduleCronExpr || '';
+        if (recipInput) recipInput.value = root.dataset.emailRecipients || '';
+        if (prefixInput) prefixInput.value = root.dataset.emailSubjectPrefix || '';
+
+        summary.style.display = 'none';
+        form.style.display = '';
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function initScheduleCard() {
+        var c = ensure();
+        if (!c) return;
+        var scheduleSection = root.querySelector('[data-aireports-schedule]');
+        if (!scheduleSection) return;
+
+        var form = scheduleSection.querySelector('[data-schedule-form]');
+        var summary = scheduleSection.querySelector('[data-schedule-summary]');
+        if (!form || !summary) return;
+
+        // Render current state into summary.
+        renderScheduleSummary(summary);
+
+        // Save button
+        var saveBtn = form.querySelector('[data-schedule-save]');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async function () {
+                var enabledCb  = form.querySelector('[data-schedule-enabled]');
+                var cronInput  = form.querySelector('[data-schedule-cron-expr]');
+                var recipInput = form.querySelector('[data-email-recipients]');
+                var prefixInput = form.querySelector('[data-email-subject-prefix]');
+
+                var payload = {
+                    id:                   c.id,
+                    schedule_enabled:     enabledCb && enabledCb.checked ? '1' : '0',
+                    schedule_cron_expr:   cronInput  ? cronInput.value.trim()  : '',
+                    email_recipients:     recipInput  ? recipInput.value.trim()  : '',
+                    email_subject_prefix: prefixInput ? prefixInput.value.trim() : '',
+                };
+
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving...';
+                try {
+                    var data = await AiReportsUtil.postForm(c.scheduleUrl, payload);
+                    if (!data.success) {
+                        alert('Error: ' + data.message);
+                        return;
+                    }
+                    // Update data attributes so summary re-renders correctly.
+                    root.dataset.scheduleEnabled    = payload.schedule_enabled;
+                    root.dataset.scheduleCronExpr   = payload.schedule_cron_expr;
+                    root.dataset.emailRecipients    = payload.email_recipients;
+                    root.dataset.emailSubjectPrefix = payload.email_subject_prefix;
+
+                    form.style.display = 'none';
+                    renderScheduleSummary(summary);
+                    summary.style.display = '';
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Schedule';
+                }
+            });
+        }
+
+        // Cancel button
+        var cancelBtn = form.querySelector('[data-schedule-cancel]');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function () {
+                form.style.display = 'none';
+                summary.style.display = '';
+            });
+        }
+
+        // Run log toggle
+        var runlogToggle = scheduleSection.querySelector('[data-runlog-toggle]');
+        var runlogBody   = scheduleSection.querySelector('[data-runlog-body]');
+        var runlogOpen   = false;
+
+        if (runlogToggle && runlogBody) {
+            runlogToggle.addEventListener('click', async function () {
+                runlogOpen = !runlogOpen;
+                var arrow = runlogToggle.querySelector('[data-runlog-arrow]');
+                if (arrow) arrow.innerHTML = runlogOpen ? '&#9650;' : '&#9660;';
+                runlogBody.style.display = runlogOpen ? '' : 'none';
+                if (runlogOpen && runlogBody.innerHTML === '') {
+                    runlogBody.textContent = 'Loading...';
+                    try {
+                        var resp = await fetch(c.runLogUrl + '?id=' + encodeURIComponent(c.id), {
+                            credentials: 'same-origin',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        });
+                        var data = await resp.json();
+                        if (data.success && data.logs) {
+                            runlogBody.innerHTML = renderRunLog(data.logs);
+                        } else {
+                            runlogBody.textContent = data.message || 'No log data.';
+                        }
+                    } catch (err) {
+                        runlogBody.textContent = 'Failed to load run history.';
+                    }
+                }
+            });
+        }
+    }
+
+    function renderScheduleSummary(el) {
+        var enabled  = root.dataset.scheduleEnabled === '1';
+        var cronExpr = root.dataset.scheduleCronExpr || '';
+        var recips   = root.dataset.emailRecipients || '';
+        var prefix   = root.dataset.emailSubjectPrefix || '';
+
+        if (!cronExpr) {
+            el.innerHTML = '<p class="aireports-schedule__none">No schedule configured. Click <strong>Schedule</strong> to set one up.</p>';
+            return;
+        }
+
+        var statusBadge = enabled
+            ? '<span class="aireports-schedule__badge aireports-schedule__badge--on">Enabled</span>'
+            : '<span class="aireports-schedule__badge aireports-schedule__badge--off">Disabled</span>';
+
+        var html = '<div class="aireports-schedule__row">'
+            + statusBadge
+            + ' <code>' + AiReportsUtil.escapeHtml(cronExpr) + '</code>';
+        if (recips) {
+            html += ' &rarr; ' + AiReportsUtil.escapeHtml(recips);
+        }
+        if (prefix) {
+            html += ' (prefix: <em>' + AiReportsUtil.escapeHtml(prefix) + '</em>)';
+        }
+        html += '</div>';
+        el.innerHTML = html;
+    }
+
+    function renderRunLog(logs) {
+        if (!logs || !logs.length) {
+            return '<p class="aireports-runlog__empty">No runs recorded yet.</p>';
+        }
+        var html = '<table class="aireports-table data aireports-runlog__table">'
+            + '<thead><tr>'
+            + '<th>Started</th><th>Trigger</th><th>Status</th>'
+            + '<th>Rows</th><th>Ms</th><th>Emailed to</th><th>Error</th>'
+            + '</tr></thead><tbody>';
+
+        logs.forEach(function (log) {
+            var statusClass = log.status === 'success' ? 'aireports-runlog__ok' : 'aireports-runlog__err';
+            html += '<tr>'
+                + '<td>' + AiReportsUtil.escapeHtml(log.started_at || '') + '</td>'
+                + '<td>' + AiReportsUtil.escapeHtml(log.triggered_by || '') + '</td>'
+                + '<td class="' + statusClass + '">' + AiReportsUtil.escapeHtml(log.status || '') + '</td>'
+                + '<td>' + (log.row_count || 0) + '</td>'
+                + '<td>' + (log.elapsed_ms || 0) + '</td>'
+                + '<td>' + AiReportsUtil.escapeHtml(log.email_sent_to || '-') + '</td>'
+                + '<td>' + AiReportsUtil.escapeHtml(log.error_message || '') + '</td>'
+                + '</tr>';
+        });
+
+        html += '</tbody></table>';
+        return html;
+    }
+
+    return { rerun: rerun, exportCsv: exportCsv, rename: rename, deleteReport: deleteReport, openSchedule: openSchedule, initScheduleCard: initScheduleCard };
 })();
 
 // Page-specific setup (ask page, saved list page).
@@ -318,6 +497,7 @@ window.aireportsSavedView = (function () {
         // aireportsSavedView global handles the saved-view detail page; auto-run on load.
         if (document.querySelector('.aireports-savedview')) {
             aireportsSavedView.rerun();
+            aireportsSavedView.initScheduleCard();
         }
     }
 

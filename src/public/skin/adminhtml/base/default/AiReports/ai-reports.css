@@ -35,3 +35,28 @@
 .aireports-savedview { padding: 0; }
 .aireports-savedview__meta { color: #71717a; font-size: 0.9rem; margin: 0 0 1rem; }
 .aireports-savedview__result { border: 1px solid #e4e4e7; border-radius: 6px; padding: 1rem; background: #fff; min-height: 240px; }
+
+/* Schedule & Email card */
+.aireports-schedule { margin-top: 1.5rem; border: 1px solid #e4e4e7; border-radius: 6px; padding: 1rem 1.25rem; background: #fafafa; }
+.aireports-schedule__heading { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: #18181b; }
+.aireports-schedule__none { color: #71717a; font-size: 0.9rem; margin: 0; }
+.aireports-schedule__row { font-size: 0.9rem; color: #18181b; }
+.aireports-schedule__badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+.aireports-schedule__badge--on { background: #dcfce7; color: #166534; }
+.aireports-schedule__badge--off { background: #f1f5f9; color: #64748b; }
+.aireports-schedule__field { margin-bottom: 0.75rem; }
+.aireports-schedule__field label { display: block; font-size: 0.875rem; font-weight: 500; color: #18181b; margin-bottom: 0.25rem; }
+.aireports-schedule__field input[type="text"] { border: 1px solid #d4d4d8; border-radius: 4px; padding: 0.4rem 0.6rem; font-size: 0.875rem; }
+.aireports-schedule__hint { display: block; color: #71717a; font-size: 0.78rem; margin-top: 0.2rem; }
+.aireports-schedule__hint code { background: #f1f5f9; padding: 0 0.25rem; border-radius: 2px; font-size: 0.78rem; }
+.aireports-schedule__actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+
+/* Run log */
+.aireports-runlog { margin-top: 1rem; border-top: 1px solid #e4e4e7; padding-top: 0.75rem; }
+.aireports-runlog__toggle { background: none; border: none; cursor: pointer; color: #2563eb; font-size: 0.875rem; padding: 0; font-weight: 500; }
+.aireports-runlog__toggle:hover { text-decoration: underline; }
+.aireports-runlog__body { margin-top: 0.75rem; overflow-x: auto; }
+.aireports-runlog__empty { color: #71717a; font-size: 0.875rem; }
+.aireports-runlog__table { font-size: 0.82rem; }
+.aireports-runlog__ok { color: #166534; font-weight: 500; }
+.aireports-runlog__err { color: #991b1b; font-weight: 500; }

@@ -14,8 +14,8 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
     protected function _isAllowed(): bool
     {
         return match ($this->getRequest()->getActionName()) {
-            'save', 'rename', 'delete' => Mage::getSingleton('admin/session')->isAllowed('aireports/manage_saved'),
-            default                    => Mage::getSingleton('admin/session')->isAllowed('aireports/run'),
+            'save', 'rename', 'delete', 'schedule' => Mage::getSingleton('admin/session')->isAllowed('aireports/manage_saved'),
+            default                                 => Mage::getSingleton('admin/session')->isAllowed('aireports/run'),
         };
     }
 
@@ -378,6 +378,104 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         } catch (\Throwable $e) {
             Mage::log('AiReports exportSavedCsv error: ' . $e->getMessage(), Mage::LOG_ERROR, 'aireports.log');
             $this->getResponse()->setHttpResponseCode(500)->setBody('Export failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * POST - update schedule fields on a saved report.
+     * Validates cron expression and email list before saving.
+     * ACL: aireports/manage_saved
+     */
+    #[\Maho\Config\Route('/admin/aireports/schedule')]
+    public function scheduleAction(): void
+    {
+        try {
+            $reportId = (int) $this->getRequest()->getParam('id');
+            /** @var MageAustralia_AiReports_Model_Report $report */
+            $report = Mage::getModel('aireports/report')->load($reportId);
+            if (!$report->getId()) {
+                $this->_jsonError('Report not found.');
+                return;
+            }
+
+            $enabled    = (int) (bool) $this->getRequest()->getParam('schedule_enabled', 0);
+            $cronExpr   = trim((string) $this->getRequest()->getParam('schedule_cron_expr', ''));
+            $recipients = trim((string) $this->getRequest()->getParam('email_recipients', ''));
+            $prefix     = trim((string) $this->getRequest()->getParam('email_subject_prefix', ''));
+
+            // Validate cron expression when provided.
+            if ($cronExpr !== '' && !MageAustralia_AiReports_Model_CronExpressionMatcher::isValid($cronExpr)) {
+                $this->_jsonError('Invalid cron expression. Use 5 space-separated fields, e.g. "0 9 * * 1".');
+                return;
+            }
+
+            // Validate each email address.
+            if ($recipients !== '') {
+                foreach (explode(',', $recipients) as $addr) {
+                    $addr = trim($addr);
+                    if ($addr !== '' && filter_var($addr, FILTER_VALIDATE_EMAIL) === false) {
+                        $this->_jsonError('Invalid email address: ' . $addr);
+                        return;
+                    }
+                }
+            }
+
+            $report->setData('schedule_enabled',     $enabled)
+                   ->setData('schedule_cron_expr',   $cronExpr !== '' ? $cronExpr : null)
+                   ->setData('email_recipients',     $recipients !== '' ? $recipients : null)
+                   ->setData('email_subject_prefix', $prefix !== '' ? $prefix : null)
+                   ->save();
+
+            $this->_jsonSuccess([
+                'schedule_enabled'    => $enabled,
+                'schedule_cron_expr'  => $cronExpr,
+                'email_recipients'    => $recipients,
+                'email_subject_prefix' => $prefix,
+            ]);
+        } catch (\Throwable $e) {
+            Mage::log('AiReports schedule error: ' . $e->getMessage(), Mage::LOG_ERROR, 'aireports.log');
+            $this->_jsonError($e->getMessage());
+        }
+    }
+
+    /**
+     * GET - return JSON list of last 50 run-log entries for a report.
+     * ACL: aireports/run
+     */
+    #[\Maho\Config\Route('/admin/aireports/runLog')]
+    public function runLogAction(): void
+    {
+        try {
+            $reportId = (int) $this->getRequest()->getParam('id');
+            if (!$reportId) {
+                $this->_jsonError('id is required.');
+                return;
+            }
+
+            /** @var MageAustralia_AiReports_Model_Resource_RunLog_Collection $collection */
+            $collection = Mage::getResourceModel('aireports/run_log_collection')
+                ->addFieldToFilter('report_id', $reportId)
+                ->setOrder('log_id', 'DESC')
+                ->setPageSize(50);
+
+            $logs = [];
+            foreach ($collection as $log) {
+                $logs[] = [
+                    'log_id'        => (int) $log->getId(),
+                    'triggered_by'  => $log->getData('triggered_by'),
+                    'started_at'    => $log->getData('started_at'),
+                    'elapsed_ms'    => (int) $log->getData('elapsed_ms'),
+                    'row_count'     => (int) $log->getData('row_count'),
+                    'status'        => $log->getData('status'),
+                    'error_message' => $log->getData('error_message'),
+                    'email_sent_to' => $log->getData('email_sent_to'),
+                ];
+            }
+
+            $this->_jsonSuccess(['logs' => $logs]);
+        } catch (\Throwable $e) {
+            Mage::log('AiReports runLog error: ' . $e->getMessage(), Mage::LOG_ERROR, 'aireports.log');
+            $this->_jsonError($e->getMessage());
         }
     }
 

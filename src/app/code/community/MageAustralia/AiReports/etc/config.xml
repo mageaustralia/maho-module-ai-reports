@@ -2,7 +2,7 @@
 <config>
     <modules>
         <MageAustralia_AiReports>
-            <version>1.0.0</version>
+            <version>1.1.0</version>
         </MageAustralia_AiReports>
     </modules>
     <global>
@@ -22,6 +22,9 @@
                     <report>
                         <table>maho_aireports_report</table>
                     </report>
+                    <run_log>
+                        <table>maho_aireports_run_log</table>
+                    </run_log>
                 </entities>
             </aireports_resource>
         </models>
@@ -37,6 +40,15 @@
                 </setup>
             </aireports_setup>
         </resources>
+        <template>
+            <email>
+                <aireports_scheduled_run module="aireports">
+                    <label>AI Reports - Scheduled Run</label>
+                    <file>aireports/scheduled_run.html</file>
+                    <type>html</type>
+                </aireports_scheduled_run>
+            </email>
+        </template>
     </global>
     <admin>
         <routers>
@@ -58,4 +70,12 @@
             </updates>
         </layout>
     </adminhtml>
+    <crontab>
+        <jobs>
+            <aireports_run_scheduled>
+                <schedule><cron_expr>* * * * *</cron_expr></schedule>
+                <run><model>aireports/cron::runScheduled</model></run>
+            </aireports_run_scheduled>
+        </jobs>
+    </crontab>
 </config>

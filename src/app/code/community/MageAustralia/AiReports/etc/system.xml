@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<config>
+    <sections>
+        <aireports translate="label" module="aireports">
+            <label>Maho AI: Reports</label>
+            <tab>general</tab>
+            <sort_order>200</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>0</show_in_website>
+            <show_in_store>0</show_in_store>
+            <groups>
+                <email translate="label">
+                    <label>Scheduled Email</label>
+                    <sort_order>10</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <from_name translate="label">
+                            <label>From Name</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Leave blank to use the general email identity name.</comment>
+                        </from_name>
+                        <from_email translate="label">
+                            <label>From Email</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Leave blank to use the general email identity address.</comment>
+                        </from_email>
+                        <default_subject_prefix translate="label">
+                            <label>Default Subject Prefix</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Appears in [brackets] before the report title in the email subject. Can be overridden per report.</comment>
+                        </default_subject_prefix>
+                    </fields>
+                </email>
+            </groups>
+        </aireports>
+    </sections>
+</config>

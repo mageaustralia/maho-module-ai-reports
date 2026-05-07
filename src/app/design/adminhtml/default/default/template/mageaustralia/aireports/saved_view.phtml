@@ -7,11 +7,72 @@
      data-export-url="<?= $this->escapeUrl($this->getExportUrl()) ?>"
      data-rename-url="<?= $this->escapeUrl($this->getRenameUrl()) ?>"
      data-delete-url="<?= $this->escapeUrl($this->getDeleteUrl()) ?>"
-     data-back-url="<?= $this->escapeUrl($this->getBackUrl()) ?>">
+     data-schedule-url="<?= $this->escapeUrl($this->getScheduleUrl()) ?>"
+     data-run-log-url="<?= $this->escapeUrl($this->getRunLogUrl()) ?>"
+     data-back-url="<?= $this->escapeUrl($this->getBackUrl()) ?>"
+     data-schedule-enabled="<?= (int) $report->getData('schedule_enabled') ?>"
+     data-schedule-cron-expr="<?= $this->escapeHtml((string) $report->getData('schedule_cron_expr')) ?>"
+     data-email-recipients="<?= $this->escapeHtml((string) $report->getData('email_recipients')) ?>"
+     data-email-subject-prefix="<?= $this->escapeHtml((string) $report->getData('email_subject_prefix')) ?>">
+
     <p class="aireports-savedview__meta">
         <?= $this->__('Last run:') ?> <?= $report->getData('last_run_at') ? $this->escapeHtml($report->getData('last_run_at')) : '-' ?>
         &nbsp;|&nbsp;
         <?= $this->__('Updated:') ?> <?= $this->escapeHtml($report->getData('updated_at')) ?>
+        <?php if ($report->getData('last_scheduled_at')): ?>
+            &nbsp;|&nbsp;
+            <?= $this->__('Last scheduled:') ?> <?= $this->escapeHtml($report->getData('last_scheduled_at')) ?>
+            (<?= $this->escapeHtml((string) $report->getData('last_scheduled_status')) ?>)
+        <?php endif; ?>
     </p>
+
     <div class="aireports-savedview__result" data-aireports-result></div>
+
+    <!-- Schedule & Email card -->
+    <div class="aireports-schedule" data-aireports-schedule>
+        <h3 class="aireports-schedule__heading"><?= $this->__('Schedule &amp; Email') ?></h3>
+        <div class="aireports-schedule__current" data-schedule-summary></div>
+        <div class="aireports-schedule__form" data-schedule-form style="display:none;">
+            <div class="aireports-schedule__field">
+                <label>
+                    <input type="checkbox" data-schedule-enabled value="1">
+                    <?= $this->__('Enable scheduled runs') ?>
+                </label>
+            </div>
+            <div class="aireports-schedule__field">
+                <label for="aireports-cron-expr"><?= $this->__('Cron expression') ?></label>
+                <input type="text" id="aireports-cron-expr" data-schedule-cron-expr
+                       placeholder="0 9 * * 1" style="width:14rem;">
+                <span class="aireports-schedule__hint">
+                    <?= $this->__('Daily 9am:') ?> <code>0 9 * * *</code> &nbsp;
+                    <?= $this->__('Mon 9am:') ?> <code>0 9 * * 1</code> &nbsp;
+                    <?= $this->__('1st of month:') ?> <code>0 9 1 * *</code>
+                </span>
+            </div>
+            <div class="aireports-schedule__field">
+                <label for="aireports-email-recipients"><?= $this->__('Email recipients') ?></label>
+                <input type="text" id="aireports-email-recipients" data-email-recipients
+                       placeholder="alice@example.com, bob@example.com" style="width:28rem;">
+                <span class="aireports-schedule__hint"><?= $this->__('Comma-separated email addresses') ?></span>
+            </div>
+            <div class="aireports-schedule__field">
+                <label for="aireports-email-prefix"><?= $this->__('Subject prefix') ?></label>
+                <input type="text" id="aireports-email-prefix" data-email-subject-prefix
+                       placeholder="<?= $this->__('e.g. Daily') ?>" style="width:14rem;">
+                <span class="aireports-schedule__hint"><?= $this->__('Optional - appears in [brackets] before the report title') ?></span>
+            </div>
+            <div class="aireports-schedule__actions">
+                <button type="button" class="scalable save" data-schedule-save><?= $this->__('Save Schedule') ?></button>
+                <button type="button" class="scalable" data-schedule-cancel><?= $this->__('Cancel') ?></button>
+            </div>
+        </div>
+
+        <!-- Run history expander -->
+        <div class="aireports-runlog" data-runlog>
+            <button type="button" class="aireports-runlog__toggle" data-runlog-toggle>
+                <?= $this->__('Run history') ?> <span data-runlog-arrow>&#9660;</span>
+            </button>
+            <div class="aireports-runlog__body" data-runlog-body style="display:none;"></div>
+        </div>
+    </div>
 </div>
