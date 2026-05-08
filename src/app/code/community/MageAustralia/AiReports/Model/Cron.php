@@ -97,10 +97,10 @@ class MageAustralia_AiReports_Model_Cron
 
             $emailedTo = $this->maybeEmail($report, $envelope);
 
-            $report->setData('last_scheduled_at', Mage_Core_Model_Locale::nowUtc())
-                   ->setData('last_scheduled_status', MageAustralia_AiReports_Model_RunLog::STATUS_SUCCESS)
-                   ->setData('last_scheduled_error', null)
-                   ->save();
+            $report->setData('last_scheduled_at', Mage_Core_Model_Locale::nowUtc());
+            $report->setData('last_scheduled_status', MageAustralia_AiReports_Model_RunLog::STATUS_SUCCESS);
+            $report->setData('last_scheduled_error', null);
+            $report->save();
 
             MageAustralia_AiReports_Model_RunLog::record(
                 reportId:     (int) $report->getId(),
@@ -128,10 +128,10 @@ class MageAustralia_AiReports_Model_Cron
             $elapsed = (int) ((microtime(true) - $start) * 1000);
 
             try {
-                $report->setData('last_scheduled_at', Mage_Core_Model_Locale::nowUtc())
-                       ->setData('last_scheduled_status', MageAustralia_AiReports_Model_RunLog::STATUS_ERROR)
-                       ->setData('last_scheduled_error', substr($e->getMessage(), 0, 1000))
-                       ->save();
+                $report->setData('last_scheduled_at', Mage_Core_Model_Locale::nowUtc());
+                $report->setData('last_scheduled_status', MageAustralia_AiReports_Model_RunLog::STATUS_ERROR);
+                $report->setData('last_scheduled_error', substr($e->getMessage(), 0, 1000));
+                $report->save();
 
                 MageAustralia_AiReports_Model_RunLog::record(
                     reportId:     (int) $report->getId(),
@@ -191,7 +191,7 @@ class MageAustralia_AiReports_Model_Cron
             $detailUrl = Mage::helper('adminhtml')->getUrl('adminhtml/aireports/viewSaved', ['id' => $report->getId()]);
 
             $vars = [
-                'subject_prefix' => $subjectPrefix !== '' ? '[' . $subjectPrefix . '] ' : '',
+                'subject_prefix' => $this->_formatSubjectPrefix($subjectPrefix),
                 'report_title'   => (string) $report->getTitle(),
                 'run_date'       => date('Y-m-d H:i') . ' UTC',
                 'narrative'      => (string) ($envelope['narrative'] ?? ''),
@@ -231,6 +231,22 @@ class MageAustralia_AiReports_Model_Cron
             );
             return null;
         }
+    }
+
+    /**
+     * Format the subject prefix. If the user already wrapped it in brackets ([Daily])
+     * leave it alone; otherwise wrap. Always trail a space.
+     */
+    private function _formatSubjectPrefix(string $prefix): string
+    {
+        $prefix = trim($prefix);
+        if ($prefix === '') {
+            return '';
+        }
+        if (preg_match('/^\[.*\]$/', $prefix)) {
+            return $prefix . ' ';
+        }
+        return '[' . $prefix . '] ';
     }
 
     /**
