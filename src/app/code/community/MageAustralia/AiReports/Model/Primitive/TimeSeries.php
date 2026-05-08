@@ -106,7 +106,7 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
         $valueExpr = match ($args['metric']) {
             'qty_sold'    => 'SUM(oi.qty_ordered)',
             'revenue'     => 'SUM(oi.row_total - oi.discount_amount)',
-            'net_revenue' => 'SUM(o.grand_total)',
+            'net_revenue' => 'SUM(o.base_total_invoiced - o.base_total_refunded)',
             'order_count' => 'COUNT(DISTINCT o.entity_id)',
             'aov'         => 'SUM(o.grand_total) / NULLIF(COUNT(DISTINCT o.entity_id), 0)',
         };
