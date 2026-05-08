@@ -30,6 +30,22 @@ class MageAustralia_AiReports_Block_Adminhtml_SavedView_Tab_Result
     public function getDeleteUrl(): string { return $this->getUrl('adminhtml/aireports/delete'); }
     public function getBackUrl(): string   { return $this->getUrl('adminhtml/aireports/saved'); }
 
+    /**
+     * Returns true when the saved plan's primitive supports a period override
+     * (i.e. has a `period` or `period_a` arg). Primitives like stock_vs_velocity
+     * and low_stock use only `lookback_days` and do not benefit from date inputs.
+     */
+    public function planSupportsPeriodOverride(): bool
+    {
+        $report = $this->getReport();
+        if (!$report) {
+            return false;
+        }
+        $plan = $report->getQueryPlan();
+        $args = $plan['args'] ?? [];
+        return isset($args['period']) || isset($args['period_a']);
+    }
+
     public function getTabLabel(): string  { return $this->__('Result'); }
     public function getTabTitle(): string  { return $this->__('Report result'); }
     public function canShowTab(): bool     { return true; }

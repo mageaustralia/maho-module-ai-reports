@@ -182,7 +182,15 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             $helper = Mage::helper('aireports');
             $stores = $helper->getUserAccessibleStoreIds();
 
+            $periodFrom = $this->getRequest()->getParam('period_from') ?: null;
+            $periodTo   = $this->getRequest()->getParam('period_to') ?: null;
+
             $plan = $report->getQueryPlan();
+            $plan = MageAustralia_AiReports_Model_PeriodOverrider::applyOverride($plan, $periodFrom, $periodTo);
+            $overrideActive = $periodFrom !== null && $periodTo !== null
+                && MageAustralia_AiReports_Model_PeriodOverrider::isValidIsoDate($periodFrom)
+                && MageAustralia_AiReports_Model_PeriodOverrider::isValidIsoDate($periodTo);
+
             $validator = new MageAustralia_AiReports_Model_QueryPlanValidator($helper->getRegistry());
             $valid = $validator->validate($plan, $stores);
 
@@ -194,18 +202,25 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             $envelope = $executor->run($valid['plan'], $valid['effectiveStoreIds'], $valid['scopeWarning']);
 
             $elapsedMs = (int) ((microtime(true) - $tStart) * 1000);
-            $report->setData('last_run_at', Mage_Core_Model_Locale::nowUtc());
-            $report->setData('last_run_elapsed_ms', $envelope['meta']['elapsed_ms']);
-            $report->save();
+
+            // Do not write last_run_at when a period override is active - the saved plan
+            // was not used as-is, so updating the metadata would be misleading.
+            if (!$overrideActive) {
+                $report->setData('last_run_at', Mage_Core_Model_Locale::nowUtc());
+                $report->setData('last_run_elapsed_ms', $envelope['meta']['elapsed_ms']);
+                $report->save();
+            }
 
             $userId = (int) (Mage::getSingleton('admin/session')->getUser()?->getId() ?? 0);
+            $overrideTag = $overrideActive ? ' period_override=' . $periodFrom . '..' . $periodTo : '';
             Mage::log(
                 sprintf(
-                    'AiReports runSaved: user_id=%d report_id=%d elapsed_ms=%d row_count=%d',
+                    'AiReports runSaved: user_id=%d report_id=%d elapsed_ms=%d row_count=%d%s',
                     $userId,
                     $reportId,
                     $elapsedMs,
                     $envelope['meta']['row_count'] ?? 0,
+                    $overrideTag,
                 ),
                 Mage::LOG_INFO,
                 'aireports.log',

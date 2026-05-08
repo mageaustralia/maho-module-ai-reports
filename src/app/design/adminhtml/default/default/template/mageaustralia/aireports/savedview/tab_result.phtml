@@ -1,5 +1,6 @@
 <?php /** @var MageAustralia_AiReports_Block_Adminhtml_SavedView_Tab_Result $this */ ?>
 <?php $report = $this->getReport(); ?>
+<?php $hasPeriod = $this->planSupportsPeriodOverride(); ?>
 <script>window.FORM_KEY = <?= json_encode($this->getFormKey()) ?>;</script>
 <div class="aireports-savedview"
      data-report-id="<?= (int) $report->getId() ?>"
@@ -18,5 +19,14 @@
             (<?= $this->escapeHtml((string) $report->getData('last_scheduled_status')) ?>)
         <?php endif; ?>
     </p>
+    <?php if ($hasPeriod): ?>
+    <div class="aireports-period-override" data-period-override>
+        <label><?= $this->__('From') ?> <input type="date" data-period-from></label>
+        <label><?= $this->__('To') ?> <input type="date" data-period-to></label>
+        <button type="button" data-period-apply class="scalable"><?= $this->__('Apply override') ?></button>
+        <button type="button" data-period-reset class="scalable" style="margin-left:0.5rem;"><?= $this->__('Reset to saved period') ?></button>
+        <span class="aireports-period-override__hint"><?= $this->__('Optional: run this saved report for a specific date range instead of its rolling period.') ?></span>
+    </div>
+    <?php endif; ?>
     <div class="aireports-savedview__result" data-aireports-result></div>
 </div>
