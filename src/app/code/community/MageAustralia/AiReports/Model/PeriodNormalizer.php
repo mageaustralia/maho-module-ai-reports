@@ -11,8 +11,14 @@ declare(strict_types=1);
 
 class MageAustralia_AiReports_Model_PeriodNormalizer
 {
-    public function __construct(private \DateTimeImmutable $today = new \DateTimeImmutable('today'))
-    {
+    public function __construct(
+        private \DateTimeImmutable $today = new \DateTimeImmutable('today', new \DateTimeZone('UTC')),
+        private string $storeTimezone = 'UTC',
+    ) {
+        // Ensure $today carries the store timezone for boundary math.
+        if ($this->today->getTimezone()->getName() !== $this->storeTimezone) {
+            $this->today = $this->today->setTimezone(new \DateTimeZone($this->storeTimezone));
+        }
     }
 
     /**
@@ -32,15 +38,13 @@ class MageAustralia_AiReports_Model_PeriodNormalizer
 
     private function resolveAbsolute(string $from, string $to): array
     {
-        $f = \DateTimeImmutable::createFromFormat('Y-m-d', $from);
-        $t = \DateTimeImmutable::createFromFormat('Y-m-d', $to);
+        $tz = new \DateTimeZone($this->storeTimezone);
+        $f  = \DateTimeImmutable::createFromFormat('!Y-m-d', $from, $tz);
+        $t  = \DateTimeImmutable::createFromFormat('!Y-m-d', $to, $tz);
         if (!$f || !$t || $f > $t) {
             throw new \InvalidArgumentException('Invalid absolute period');
         }
-        return [
-            'from' => $f->format('Y-m-d') . ' 00:00:00',
-            'to'   => $t->format('Y-m-d') . ' 23:59:59',
-        ];
+        return $this->toUtcRange($f, $t);
     }
 
     private function resolveRelative(string $key): array
@@ -85,10 +89,21 @@ class MageAustralia_AiReports_Model_PeriodNormalizer
             default:
                 throw new \InvalidArgumentException("Unknown relative period: $key");
         }
-        return [
-            'from' => $f->format('Y-m-d') . ' 00:00:00',
-            'to'   => $t->format('Y-m-d') . ' 23:59:59',
-        ];
+        return $this->toUtcRange($f, $t);
+    }
+
+    /**
+     * Convert two DateTimeImmutables (assumed to be in store TZ) into a UTC
+     * 'from'/'to' string pair representing the inclusive day boundaries.
+     *
+     * @return array{from: string, to: string}
+     */
+    private function toUtcRange(\DateTimeImmutable $f, \DateTimeImmutable $t): array
+    {
+        $utc  = new \DateTimeZone('UTC');
+        $from = $f->setTime(0, 0, 0)->setTimezone($utc)->format('Y-m-d H:i:s');
+        $to   = $t->setTime(23, 59, 59)->setTimezone($utc)->format('Y-m-d H:i:s');
+        return ['from' => $from, 'to' => $to];
     }
 
     private function quarterStart(\DateTimeImmutable $d): \DateTimeImmutable

@@ -28,7 +28,7 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
             'required'             => ['metric', 'dimension', 'period'],
             'additionalProperties' => false,
             'properties'           => [
-                'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count']],
+                'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count']],
                 'dimension' => ['type' => 'string', 'enum' => ['product', 'store', 'order_status']],
                 'period'    => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'store_ids'   => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],
@@ -50,7 +50,7 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
     {
         $conn   = Mage::getSingleton('core/resource')->getConnection('core_read');
         $r      = Mage::getSingleton('core/resource');
-        $period = (new MageAustralia_AiReports_Model_PeriodNormalizer())->resolve($args['period']);
+        $period = Mage::helper('aireports')->newPeriodNormalizer()->resolve($args['period']);
 
         $topN   = new MageAustralia_AiReports_Model_Primitive_TopN();
         $select = $topN->buildSelect($conn, $r, $args + ['limit' => 100], $scopeStoreIds, $period);

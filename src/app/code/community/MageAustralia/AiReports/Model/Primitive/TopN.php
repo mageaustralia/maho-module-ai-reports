@@ -28,7 +28,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             'required'             => ['metric', 'dimension', 'period', 'limit'],
             'additionalProperties' => false,
             'properties'           => [
-                'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count', 'aov', 'margin']],
+                'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin']],
                 'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'customer', 'store', 'order_status']],
                 'period'    => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'limit'     => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
@@ -43,7 +43,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                 ],
                 'display_metrics' => [
                     'type'        => ['array', 'null'],
-                    'items'       => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count', 'aov', 'margin']],
+                    'items'       => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin']],
                     'description' => 'Additional metric columns to show alongside the sort metric. The `metric` arg still determines the sort order; these are display-only.',
                     'maxItems'    => 4,
                 ],
@@ -60,7 +60,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
     {
         $conn   = Mage::getSingleton('core/resource')->getConnection('core_read');
         $r      = Mage::getSingleton('core/resource');
-        $period = (new MageAustralia_AiReports_Model_PeriodNormalizer())->resolve($args['period']);
+        $period = Mage::helper('aireports')->newPeriodNormalizer()->resolve($args['period']);
         $select = $this->buildSelect($conn, $r, $args, $scopeStoreIds, $period);
         return $this->shapeRows($conn->fetchAll($select), $args['dimension']);
     }
@@ -79,6 +79,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         $valueExprs = [
             'qty_sold'    => 'SUM(oi.qty_ordered)',
             'revenue'     => 'SUM(oi.row_total - oi.discount_amount)',
+            'net_revenue' => 'SUM(o.grand_total)',
             'order_count' => 'COUNT(DISTINCT o.entity_id)',
             'aov'         => 'SUM(o.grand_total) / NULLIF(COUNT(DISTINCT o.entity_id), 0)',
             'margin'      => 'SUM(oi.row_total - oi.discount_amount - (oi.qty_ordered * oi.base_cost))',
@@ -194,7 +195,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             default                                => null,
         };
         $linkParam  = $dimension === 'store' ? 'store_id' : 'id';
-        $metricKeys = ['qty_sold', 'revenue', 'order_count', 'aov', 'margin'];
+        $metricKeys = ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin'];
         foreach ($rawRows as $row) {
             $linkId = isset($row['link_id']) ? (int) $row['link_id'] : null;
             $entry  = [
@@ -243,7 +244,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
 
         $conn   = Mage::getSingleton('core/resource')->getConnection('core_read');
         $r      = Mage::getSingleton('core/resource');
-        $period = (new MageAustralia_AiReports_Model_PeriodNormalizer())->resolve($args['period']);
+        $period = Mage::helper('aireports')->newPeriodNormalizer()->resolve($args['period']);
 
         return $this->buildDrillRows($conn, $r, $dimension, $linkId, $scopeStoreIds, $period);
     }

@@ -24,7 +24,7 @@ final class TopNTest extends TestCase
         $this->assertContains('dimension', $schema['required']);
         $this->assertContains('period', $schema['required']);
         $this->assertContains('limit', $schema['required']);
-        $this->assertSame(['qty_sold', 'revenue', 'order_count', 'aov', 'margin'],
+        $this->assertSame(['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin'],
             $schema['properties']['metric']['enum']);
         $this->assertSame(['product', 'sku', 'customer', 'store', 'order_status'],
             $schema['properties']['dimension']['enum']);

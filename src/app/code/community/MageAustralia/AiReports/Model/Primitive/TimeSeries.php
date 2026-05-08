@@ -29,7 +29,7 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
             'required'             => ['metric', 'period', 'granularity'],
             'additionalProperties' => false,
             'properties'           => [
-                'metric'            => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count', 'aov']],
+                'metric'            => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov']],
                 'period'            => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'comparison_period' => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'granularity'       => ['type' => 'string', 'enum' => ['day', 'week', 'month']],
@@ -59,9 +59,9 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
 
     public function execute(array $args, array $scopeStoreIds): array
     {
-        $conn      = Mage::getSingleton('core/resource')->getConnection('core_read');
-        $r         = Mage::getSingleton('core/resource');
-        $normalizer = new MageAustralia_AiReports_Model_PeriodNormalizer();
+        $conn       = Mage::getSingleton('core/resource')->getConnection('core_read');
+        $r          = Mage::getSingleton('core/resource');
+        $normalizer = Mage::helper('aireports')->newPeriodNormalizer();
 
         $primaryPeriod = $normalizer->resolve($args['period']);
         $primaryRows   = $this->fetchPeriodRows($conn, $r, $args, $scopeStoreIds, $primaryPeriod, 'Current');
@@ -93,15 +93,20 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
         array $period,
         string $seriesLabel,
     ): array {
+        $helper = Mage::helper('aireports');
+        $tz     = new \DateTimeZone($helper->getStoreTimezone());
+        $offset = (new \DateTime('now', $tz))->format('P'); // e.g. '+10:00'
+
         $bucketExpr = match ($args['granularity']) {
-            'day'   => 'DATE(o.created_at)',
-            'week'  => 'DATE_SUB(DATE(o.created_at), INTERVAL WEEKDAY(o.created_at) DAY)',
-            'month' => "DATE_FORMAT(o.created_at, '%Y-%m-01')",
+            'day'   => "DATE(CONVERT_TZ(o.created_at, '+00:00', '$offset'))",
+            'week'  => "DATE_SUB(DATE(CONVERT_TZ(o.created_at, '+00:00', '$offset')), INTERVAL WEEKDAY(CONVERT_TZ(o.created_at, '+00:00', '$offset')) DAY)",
+            'month' => "DATE_FORMAT(CONVERT_TZ(o.created_at, '+00:00', '$offset'), '%Y-%m-01')",
         };
 
         $valueExpr = match ($args['metric']) {
             'qty_sold'    => 'SUM(oi.qty_ordered)',
             'revenue'     => 'SUM(oi.row_total - oi.discount_amount)',
+            'net_revenue' => 'SUM(o.grand_total)',
             'order_count' => 'COUNT(DISTINCT o.entity_id)',
             'aov'         => 'SUM(o.grand_total) / NULLIF(COUNT(DISTINCT o.entity_id), 0)',
         };

@@ -77,4 +77,16 @@ class MageAustralia_AiReports_Helper_Data extends Mage_Core_Helper_Abstract
     {
         return (bool) Mage::getSingleton('admin/session')->isAllowed('customer/manage_customers');
     }
+
+    public function getStoreTimezone(): string
+    {
+        return (string) (Mage::app()->getStore()->getConfig('general/locale/timezone') ?: 'UTC');
+    }
+
+    public function newPeriodNormalizer(?\DateTimeImmutable $today = null): MageAustralia_AiReports_Model_PeriodNormalizer
+    {
+        $tz    = $this->getStoreTimezone();
+        $today = $today ?? new \DateTimeImmutable('now', new \DateTimeZone($tz));
+        return new MageAustralia_AiReports_Model_PeriodNormalizer($today, $tz);
+    }
 }

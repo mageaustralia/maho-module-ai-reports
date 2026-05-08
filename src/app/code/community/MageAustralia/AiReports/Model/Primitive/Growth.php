@@ -28,7 +28,7 @@ class MageAustralia_AiReports_Model_Primitive_Growth
             'required'   => ['metric', 'dimension', 'period_a', 'period_b', 'limit'],
             'additionalProperties' => false,
             'properties' => [
-                'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'order_count', 'aov', 'margin']],
+                'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin']],
                 'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'customer', 'store']],
                 'period_a'  => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'period_b'  => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
@@ -47,7 +47,7 @@ class MageAustralia_AiReports_Model_Primitive_Growth
     {
         $conn   = Mage::getSingleton('core/resource')->getConnection('core_read');
         $r      = Mage::getSingleton('core/resource');
-        $norm   = new MageAustralia_AiReports_Model_PeriodNormalizer();
+        $norm   = Mage::helper('aireports')->newPeriodNormalizer();
         $a      = $norm->resolve($args['period_a']);
         $b      = $norm->resolve($args['period_b']);
 
@@ -147,7 +147,7 @@ class MageAustralia_AiReports_Model_Primitive_Growth
 
         $conn = Mage::getSingleton('core/resource')->getConnection('core_read');
         $r    = Mage::getSingleton('core/resource');
-        $norm = new MageAustralia_AiReports_Model_PeriodNormalizer();
+        $norm = Mage::helper('aireports')->newPeriodNormalizer();
         $a    = $norm->resolve($args['period_a']);
         $b    = $norm->resolve($args['period_b']);
 

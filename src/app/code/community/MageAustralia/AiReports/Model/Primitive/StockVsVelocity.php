@@ -90,8 +90,12 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
         }
 
         $lookbackDays = (int) $args['lookback_days'];
-        $from = (new \DateTimeImmutable("-$lookbackDays days"))->format('Y-m-d 00:00:00');
-        $to   = (new \DateTimeImmutable('today'))->format('Y-m-d 23:59:59');
+        $helper = Mage::helper('aireports');
+        $norm   = $helper->newPeriodNormalizer();
+        $range  = $norm->resolve(['type' => 'absolute',
+            'from' => (new \DateTimeImmutable('now', new \DateTimeZone($helper->getStoreTimezone())))->modify("-$lookbackDays days")->format('Y-m-d'),
+            'to'   => (new \DateTimeImmutable('now', new \DateTimeZone($helper->getStoreTimezone())))->format('Y-m-d'),
+        ]);
 
         $salesSubSelect = $conn->select()
             ->from(['oi2' => $r->getTableName('sales/order_item')], [
@@ -139,7 +143,7 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
     ): array {
         switch ($filter['type']) {
             case 'top_n_sellers':
-                $period = (new MageAustralia_AiReports_Model_PeriodNormalizer())->resolve($filter['period']);
+                $period = Mage::helper('aireports')->newPeriodNormalizer()->resolve($filter['period']);
                 $sel = $conn->select()
                     ->from(['oi' => $r->getTableName('sales/order_item')], ['product_id'])
                     ->joinInner(['o' => $r->getTableName('sales/order')], 'o.entity_id = oi.order_id', [])
