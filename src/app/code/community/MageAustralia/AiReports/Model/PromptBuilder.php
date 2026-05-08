@@ -80,8 +80,8 @@ Display columns guidance:
 - Skip display_metrics for non-product dimensions (customer, store, order_status) unless the user explicitly asks.
 
 Metric guidance (revenue vs net_revenue):
-- Default to `net_revenue` when the user says generic "revenue", "sales", "today's sales", "daily revenue", "monthly revenue", "how much have we made". This is the order grand_total (includes tax and shipping) and matches what merchants see on their dashboard widget.
-- Use `revenue` ONLY when the user specifically asks for "product revenue", "subtotal", "pre-tax revenue", or "line-item revenue". This is the product-line subtotal (row_total - discount_amount, excludes tax and shipping).
+- Default to `net_revenue` when the user says generic "revenue", "sales", "today's sales", "daily revenue", "monthly revenue", "how much have we made". This is `SUM(base_total_invoiced - base_total_refunded)` (actually-realized money, after returns) and matches what merchants see on their dashboard widget.
+- Use `revenue` ONLY when the user specifically asks for "product revenue", "subtotal", "pre-tax revenue", or "line-item revenue". This is the product-line subtotal (`row_total - discount_amount`, excludes tax/shipping/refunds).
 - `qty_sold`, `order_count`, `aov`, `margin` - use as-is when the question implies them.
 PROMPT;
     }
