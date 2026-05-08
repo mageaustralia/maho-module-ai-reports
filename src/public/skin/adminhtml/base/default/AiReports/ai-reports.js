@@ -305,7 +305,25 @@ window.aireportsSavedView = (function () {
         window.location.href = c.backUrl;
     }
 
-    return { rerun: rerun, exportCsv: exportCsv, rename: rename, deleteReport: deleteReport };
+    function saveScheduleFromTop() {
+        // Delegate to the schedule tab's existing Save button. The button is in the DOM
+        // even when the tab is not the active visible one (varienTabs only toggles visibility),
+        // so its click handler fires and the inline JS in tab_schedule.phtml runs.
+        var btn = document.querySelector('[data-schedule-tab-save]');
+        if (btn) {
+            btn.click();
+            return;
+        }
+        alert('Switch to the Schedule & Email tab and try again.');
+    }
+
+    return {
+        rerun: rerun,
+        exportCsv: exportCsv,
+        rename: rename,
+        deleteReport: deleteReport,
+        saveScheduleFromTop: saveScheduleFromTop,
+    };
 })();
 
 // Page-specific setup (ask page, saved list page).

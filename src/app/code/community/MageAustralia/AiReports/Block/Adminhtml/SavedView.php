@@ -35,6 +35,12 @@ class MageAustralia_AiReports_Block_Adminhtml_SavedView extends Mage_Adminhtml_B
         ]);
 
         if ($this->canManage()) {
+            $this->_addButton('saveSchedule', [
+                'label'   => $this->__('Save Schedule'),
+                'onclick' => 'aireportsSavedView.saveScheduleFromTop()',
+                'class'   => 'save',
+            ]);
+
             $this->_addButton('rename', [
                 'label'   => $this->__('Rename'),
                 'onclick' => 'aireportsSavedView.rename()',
