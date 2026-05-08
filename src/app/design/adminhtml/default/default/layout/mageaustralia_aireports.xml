@@ -41,4 +41,15 @@
             <block type="aireports/adminhtml_savedView_tab_runLog" name="aireports.savedView.tab.runLog"/>
         </block>
     </adminhtml_aireports_runlog>
+
+    <adminhtml_dashboard_index>
+        <reference name="head">
+            <action method="addCss"><name>AiReports/ai-reports.css</name></action>
+            <action method="addItem"><type>skin_js</type><name>AiReports/vendor/chart.umd.min.js</name></action>
+            <action method="addItem"><type>skin_js</type><name>AiReports/ai-reports.js</name></action>
+        </reference>
+        <reference name="content">
+            <block type="aireports/adminhtml_dashboard_pinned" name="aireports.dashboard.pinned" template="mageaustralia/aireports/dashboard/pinned.phtml" before="-"/>
+        </reference>
+    </adminhtml_dashboard_index>
 </layout>

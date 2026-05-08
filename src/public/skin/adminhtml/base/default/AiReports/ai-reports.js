@@ -55,7 +55,7 @@ var AiReportsUtil = (function () {
         target.innerHTML = '<div class="aireports-error">' + escapeHtml(msg || 'Unknown error') + '</div>';
     }
 
-    function renderEnvelope(target, env, ctx) {
+    function renderEnvelope(target, env, ctx, drillUrl) {
         target.hidden = false;
         target.innerHTML = '';
         var head = document.createElement('div');
@@ -71,7 +71,7 @@ var AiReportsUtil = (function () {
             target.appendChild(banner);
         }
 
-        env.blocks.forEach(function (block) { target.appendChild(renderBlock(block)); });
+        env.blocks.forEach(function (block) { target.appendChild(renderBlock(block, ctx, drillUrl)); });
 
         var actions = document.createElement('div');
         actions.className = 'aireports-result__actions';
@@ -111,13 +111,13 @@ var AiReportsUtil = (function () {
         }
     }
 
-    function renderBlock(block) {
+    function renderBlock(block, ctx, drillUrl) {
         var el = document.createElement('div');
         el.className = 'aireports-block aireports-block--' + block.type;
         switch (block.type) {
             case 'kpi':   return renderKpi(el, block);
             case 'chart': return renderChart(el, block);
-            case 'table': return renderTable(el, block);
+            case 'table': return renderTable(el, block, ctx, drillUrl);
         }
         el.textContent = JSON.stringify(block);
         return el;
@@ -188,15 +188,72 @@ var AiReportsUtil = (function () {
         return el;
     }
 
-    function renderTable(el, block) {
+    function renderTable(el, block, ctx, drillUrl) {
+        var canDrill = !!(drillUrl && ctx && ctx.queryPlan);
         var t = document.createElement('table');
         t.className = 'aireports-table data';
         var thead = document.createElement('thead');
-        thead.innerHTML = '<tr>' + block.columns.map(function (c) { return '<th>' + escapeHtml(c.label) + '</th>'; }).join('') + '</tr>';
+        var thRow = '<tr>';
+        if (canDrill) thRow += '<th class="aireports-table__chevron"></th>';
+        thRow += block.columns.map(function (c) { return '<th>' + escapeHtml(c.label) + '</th>'; }).join('') + '</tr>';
+        thead.innerHTML = thRow;
         t.appendChild(thead);
         var tbody = document.createElement('tbody');
+        var colSpan = block.columns.length + (canDrill ? 1 : 0);
         block.rows.forEach(function (row) {
             var tr = document.createElement('tr');
+            if (canDrill) {
+                var chevronTd = document.createElement('td');
+                chevronTd.className = 'aireports-table__chevron';
+                var btn = document.createElement('button');
+                btn.setAttribute('data-aireports-drill', '');
+                btn.setAttribute('aria-label', 'Expand row');
+                btn.textContent = '▸'; // right-pointing triangle
+                chevronTd.appendChild(btn);
+                tr.appendChild(chevronTd);
+
+                // Drill row (initially hidden, inserted after this tr).
+                var drillTr = document.createElement('tr');
+                drillTr.className = 'aireports-drill-row';
+                drillTr.hidden = true;
+                var drillTd = document.createElement('td');
+                drillTd.colSpan = colSpan;
+                drillTr.appendChild(drillTd);
+
+                (function (capturedRow, capturedDrillTr, capturedDrillTd, capturedBtn) {
+                    btn.addEventListener('click', function () {
+                        var isExpanded = capturedBtn.classList.contains('expanded');
+                        if (isExpanded) {
+                            capturedBtn.classList.remove('expanded');
+                            capturedDrillTr.hidden = true;
+                            return;
+                        }
+                        capturedBtn.classList.add('expanded');
+                        capturedDrillTr.hidden = false;
+                        // Only fetch once.
+                        if (capturedDrillTd.dataset.loaded) return;
+                        capturedDrillTd.dataset.loaded = '1';
+                        capturedDrillTd.innerHTML = '<span class="aireports-drill-loading">Loading...</span>';
+                        var rowKey = { link_id: capturedRow.link_id, label: capturedRow.cells ? capturedRow.cells.label : '' };
+                        AiReportsUtil.postForm(drillUrl, {
+                            query_plan_json: JSON.stringify(ctx.queryPlan),
+                            row_key_json: JSON.stringify(rowKey),
+                        }).then(function (data) {
+                            if (!data.success) {
+                                capturedDrillTd.innerHTML = '<span class="aireports-error">' + escapeHtml(data.message || 'Drilldown failed.') + '</span>';
+                                return;
+                            }
+                            capturedDrillTd.innerHTML = '';
+                            capturedDrillTd.appendChild(renderDrillSubTable(data.rows));
+                        }).catch(function (err) {
+                            capturedDrillTd.innerHTML = '<span class="aireports-error">' + escapeHtml(err.message) + '</span>';
+                        });
+                    });
+                })(row, drillTr, drillTd, btn);
+
+                // Schedule drill row insertion after this tr.
+                tr._drillTr = drillTr;
+            }
             block.columns.forEach(function (col) {
                 var td = document.createElement('td');
                 var value = row.cells[col.key];
@@ -208,10 +265,50 @@ var AiReportsUtil = (function () {
                 tr.appendChild(td);
             });
             tbody.appendChild(tr);
+            if (tr._drillTr) {
+                tbody.appendChild(tr._drillTr);
+            }
         });
         t.appendChild(tbody);
         el.appendChild(t);
         return el;
+    }
+
+    function renderDrillSubTable(rows) {
+        if (!rows || rows.length === 0) {
+            var empty = document.createElement('p');
+            empty.className = 'aireports-drill-empty';
+            empty.textContent = 'No contributing records found.';
+            return empty;
+        }
+        var keys = Object.keys(rows[0]);
+        var table = document.createElement('table');
+        table.className = 'aireports-drill-table';
+        var thead = document.createElement('thead');
+        thead.innerHTML = '<tr>' + keys.map(function (k) {
+            return '<th>' + escapeHtml(k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); })) + '</th>';
+        }).join('') + '</tr>';
+        table.appendChild(thead);
+        var tbody = document.createElement('tbody');
+        rows.forEach(function (row) {
+            var tr = document.createElement('tr');
+            keys.forEach(function (k) {
+                var td = document.createElement('td');
+                var v = row[k];
+                // Format numeric columns.
+                if (k === 'row_total') {
+                    td.textContent = Number(v).toLocaleString(undefined, { style: 'currency', currency: 'AUD' });
+                } else if (k === 'qty_ordered') {
+                    td.textContent = Number(v).toLocaleString();
+                } else {
+                    td.textContent = v === null || v === undefined ? '-' : String(v);
+                }
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        return table;
     }
 
     function chartColor(i, a) {
@@ -264,7 +361,11 @@ window.aireportsSavedView = (function () {
             renameUrl: root.dataset.renameUrl,
             deleteUrl: root.dataset.deleteUrl,
             backUrl:   root.dataset.backUrl,
+            drillUrl:  root.dataset.drillUrl || null,
+            pinUrl:    root.dataset.pinUrl || null,
+            unpinUrl:  root.dataset.unpinUrl || null,
             target:    root.querySelector('[data-aireports-result]'),
+            queryPlan: null,
         };
         return ctx;
     }
@@ -286,7 +387,12 @@ window.aireportsSavedView = (function () {
             var override = readOverride();
             var data = await AiReportsUtil.postForm(c.runUrl, Object.assign({ id: c.id }, override));
             if (!data.success) { AiReportsUtil.renderError(c.target, data.message); return; }
-            AiReportsUtil.renderEnvelope(c.target, data.envelope, { saveUrl: null, exportUrl: null });
+            if (data.query_plan) { c.queryPlan = data.query_plan; }
+            AiReportsUtil.renderEnvelope(c.target, data.envelope, {
+                saveUrl:   null,
+                exportUrl: null,
+                queryPlan: c.queryPlan,
+            }, c.drillUrl);
         } catch (err) {
             AiReportsUtil.renderError(c.target, err.message);
         }
@@ -327,12 +433,30 @@ window.aireportsSavedView = (function () {
         alert('Switch to the Schedule & Email tab and try again.');
     }
 
+    async function pin(reportId) {
+        var c = ensure();
+        if (!c || !c.pinUrl) return;
+        var data = await AiReportsUtil.postForm(c.pinUrl, { id: reportId });
+        if (data.success) { window.location.reload(); }
+        else { alert('Pin failed: ' + (data.message || 'unknown')); }
+    }
+
+    async function unpin(reportId) {
+        var c = ensure();
+        if (!c || !c.unpinUrl) return;
+        var data = await AiReportsUtil.postForm(c.unpinUrl, { id: reportId });
+        if (data.success) { window.location.reload(); }
+        else { alert('Unpin failed: ' + (data.message || 'unknown')); }
+    }
+
     return {
         rerun: rerun,
         exportCsv: exportCsv,
         rename: rename,
         deleteReport: deleteReport,
         saveScheduleFromTop: saveScheduleFromTop,
+        pin: pin,
+        unpin: unpin,
     };
 })();
 
@@ -360,6 +484,25 @@ window.aireportsSavedView = (function () {
                 });
             });
         }
+        // Dashboard: auto-load each pinned report card.
+        document.querySelectorAll('[data-aireports-pinned]').forEach(function (pinnedRoot) {
+            var runUrl = pinnedRoot.dataset.runUrl;
+            pinnedRoot.querySelectorAll('[data-pinned-card]').forEach(async function (card) {
+                var id = card.dataset.reportId;
+                var target = card.querySelector('[data-aireports-result]');
+                try {
+                    var data = await AiReportsUtil.postForm(runUrl, { id: id });
+                    if (!data.success) {
+                        target.innerHTML = '<div class="aireports-error">' + AiReportsUtil.escapeHtml(data.message || 'Failed') + '</div>';
+                        return;
+                    }
+                    target.innerHTML = '';
+                    AiReportsUtil.renderEnvelope(target, data.envelope, { saveUrl: null, exportUrl: null });
+                } catch (err) {
+                    target.innerHTML = '<div class="aireports-error">' + AiReportsUtil.escapeHtml(err.message || 'Failed') + '</div>';
+                }
+            });
+        });
     }
 
     function setupAsk(root) {
@@ -369,6 +512,7 @@ window.aireportsSavedView = (function () {
         var generateUrl = root.dataset.generateUrl;
         var saveUrl = root.dataset.saveUrl;
         var exportUrl = root.dataset.exportUrl;
+        var drillUrl = root.dataset.drillUrl || null;
 
         root.querySelectorAll('[data-aireports-chip]').forEach(function (chip) {
             chip.addEventListener('click', function () {
@@ -389,7 +533,7 @@ window.aireportsSavedView = (function () {
                     exportUrl: exportUrl,
                     queryPlan: data.query_plan,
                     renderHint: data.render_hint,
-                });
+                }, drillUrl);
             } catch (err) {
                 AiReportsUtil.renderError(result, err.message);
             }

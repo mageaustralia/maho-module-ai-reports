@@ -1,0 +1,26 @@
+<?php /** @var MageAustralia_AiReports_Block_Adminhtml_Dashboard_Pinned $this */ ?>
+<?php if (!$this->canSee()) return; ?>
+<?php $reports = $this->getPinnedReports(); ?>
+<?php if ($reports->count() === 0) return; ?>
+<script>window.FORM_KEY = <?= json_encode($this->getFormKey()) ?>;</script>
+<div class="aireports-dashboard-pinned" data-aireports-pinned data-run-url="<?= $this->escapeUrl($this->getRunUrl()) ?>">
+    <h3 class="aireports-dashboard-pinned__heading"><?= $this->__('Pinned AI Reports') ?></h3>
+    <div class="aireports-dashboard-pinned__grid">
+        <?php foreach ($reports as $r): /** @var MageAustralia_AiReports_Model_Report $r */ ?>
+            <div class="aireports-dashboard-pinned__card" data-pinned-card data-report-id="<?= (int) $r->getId() ?>">
+                <h4>
+                    <a href="<?= $this->escapeUrl($this->getViewUrl((int) $r->getId())) ?>">
+                        <?= $this->escapeHtml($r->getTitle()) ?>
+                    </a>
+                </h4>
+                <div class="aireports-dashboard-pinned__body" data-aireports-result>
+                    <div class="aireports-loading">
+                        <span class="aireports-spinner" aria-hidden="true"></span>
+                        <span class="aireports-loading__text"><?= $this->__('Loading') ?></span>
+                        <span class="aireports-loading__dots"><span></span><span></span><span></span></span>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>

@@ -35,6 +35,17 @@ class MageAustralia_AiReports_Block_Adminhtml_SavedView extends Mage_Adminhtml_B
         ]);
 
         if ($this->canManage()) {
+            $report   = $this->getReport();
+            $isPinned = $report && $report->getData('is_pinned_to_dashboard');
+
+            $this->_addButton('togglePin', [
+                'label'   => $isPinned ? $this->__('Unpin from Dashboard') : $this->__('Pin to Dashboard'),
+                'onclick' => $isPinned
+                    ? 'aireportsSavedView.unpin(' . (int) ($report ? $report->getId() : 0) . ')'
+                    : 'aireportsSavedView.pin(' . (int) ($report ? $report->getId() : 0) . ')',
+                'class'   => 'add',
+            ]);
+
             $this->_addButton('saveSchedule', [
                 'label'   => $this->__('Save Schedule'),
                 'onclick' => 'aireportsSavedView.saveScheduleFromTop()',
@@ -69,6 +80,8 @@ class MageAustralia_AiReports_Block_Adminhtml_SavedView extends Mage_Adminhtml_B
     public function getBackUrl(): string     { return $this->getUrl('adminhtml/aireports/saved'); }
     public function getRenameUrl(): string   { return $this->getUrl('adminhtml/aireports/rename'); }
     public function getDeleteUrl(): string   { return $this->getUrl('adminhtml/aireports/delete'); }
+    public function getPinUrl(): string      { return $this->getUrl('adminhtml/aireports/pin'); }
+    public function getUnpinUrl(): string    { return $this->getUrl('adminhtml/aireports/unpin'); }
 
     public function canManage(): bool
     {

@@ -29,6 +29,9 @@ class MageAustralia_AiReports_Block_Adminhtml_SavedView_Tab_Result
     public function getRenameUrl(): string { return $this->getUrl('adminhtml/aireports/rename'); }
     public function getDeleteUrl(): string { return $this->getUrl('adminhtml/aireports/delete'); }
     public function getBackUrl(): string   { return $this->getUrl('adminhtml/aireports/saved'); }
+    public function getDrillUrl(): string  { return $this->getUrl('adminhtml/aireports/drill'); }
+    public function getPinUrl(): string    { return $this->getUrl('adminhtml/aireports/pin'); }
+    public function getUnpinUrl(): string  { return $this->getUrl('adminhtml/aireports/unpin'); }
 
     /**
      * Returns true when the saved plan's primitive supports a period override

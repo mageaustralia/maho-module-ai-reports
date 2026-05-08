@@ -8,7 +8,10 @@
      data-export-url="<?= $this->escapeUrl($this->getExportUrl()) ?>"
      data-rename-url="<?= $this->escapeUrl($this->getRenameUrl()) ?>"
      data-delete-url="<?= $this->escapeUrl($this->getDeleteUrl()) ?>"
-     data-back-url="<?= $this->escapeUrl($this->getBackUrl()) ?>">
+     data-back-url="<?= $this->escapeUrl($this->getBackUrl()) ?>"
+     data-drill-url="<?= $this->escapeUrl($this->getDrillUrl()) ?>"
+     data-pin-url="<?= $this->escapeUrl($this->getPinUrl()) ?>"
+     data-unpin-url="<?= $this->escapeUrl($this->getUnpinUrl()) ?>">
     <p class="aireports-savedview__meta">
         <?= $this->__('Last run:') ?> <?= $report->getData('last_run_at') ? $this->escapeHtml($report->getData('last_run_at')) : '-' ?>
         &nbsp;|&nbsp;

@@ -58,6 +58,14 @@ class MageAustralia_AiReports_Block_Adminhtml_Saved_Grid extends Mage_Adminhtml_
             'default' => '-',
         ]);
 
+        $this->addColumn('is_pinned_to_dashboard', [
+            'header'  => $this->__('Pinned'),
+            'index'   => 'is_pinned_to_dashboard',
+            'type'    => 'options',
+            'options' => [0 => $this->__('No'), 1 => $this->__('Yes')],
+            'width'   => '80px',
+        ]);
+
         $this->addColumn('action', [
             'header'    => $this->__('Action'),
             'width'     => '80px',

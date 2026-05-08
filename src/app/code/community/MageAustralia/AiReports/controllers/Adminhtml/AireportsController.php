@@ -14,8 +14,8 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
     protected function _isAllowed(): bool
     {
         return match ($this->getRequest()->getActionName()) {
-            'save', 'rename', 'delete', 'schedule' => Mage::getSingleton('admin/session')->isAllowed('aireports/manage_saved'),
-            default                                 => Mage::getSingleton('admin/session')->isAllowed('aireports/run'),
+            'save', 'rename', 'delete', 'schedule', 'pin', 'unpin' => Mage::getSingleton('admin/session')->isAllowed('aireports/manage_saved'),
+            default                                                  => Mage::getSingleton('admin/session')->isAllowed('aireports/run'),
         };
     }
 
@@ -226,7 +226,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
                 'aireports.log',
             );
 
-            $this->_jsonSuccess(['envelope' => $envelope]);
+            $this->_jsonSuccess(['envelope' => $envelope, 'query_plan' => $valid['plan']]);
         } catch (\Throwable $e) {
             Mage::log('AiReports runSaved error: ' . $e->getMessage(), Mage::LOG_ERROR, 'aireports.log');
             $this->_jsonError($e->getMessage());
@@ -472,6 +472,43 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         $this->renderLayout();
     }
 
+    /**
+     * POST - return contributing records for a specific result row (inline drilldown).
+     * ACL: aireports/run (default branch in _isAllowed()).
+     */
+    #[\Maho\Config\Route('/admin/aireports/drill')]
+    public function drillAction(): void
+    {
+        try {
+            $planJson = (string) $this->getRequest()->getParam('query_plan_json', '');
+            $rowKeyJson = (string) $this->getRequest()->getParam('row_key_json', '');
+            if ($planJson === '' || $rowKeyJson === '') {
+                $this->_jsonError('Missing query_plan_json or row_key_json.');
+                return;
+            }
+            $plan   = json_decode($planJson, true);
+            $rowKey = json_decode($rowKeyJson, true);
+            if (!is_array($plan) || !is_array($rowKey)) {
+                $this->_jsonError('Invalid JSON.');
+                return;
+            }
+            $helper = Mage::helper('aireports');
+            $stores = $helper->getUserAccessibleStoreIds();
+            $validator = new MageAustralia_AiReports_Model_QueryPlanValidator($helper->getRegistry());
+            $valid = $validator->validate($plan, $stores);
+            $primitive = $helper->getRegistry()->get($valid['plan']['primitive']);
+            $rows = $primitive->drill($valid['plan']['args'] ?? [], $valid['effectiveStoreIds'], $rowKey);
+            if ($rows === null) {
+                $this->_jsonError('Drilldown not supported for this primitive.');
+                return;
+            }
+            $this->_jsonSuccess(['rows' => $rows]);
+        } catch (\Throwable $e) {
+            Mage::log('AiReports drill error: ' . $e->getMessage(), Mage::LOG_ERROR, 'aireports.log');
+            $this->_jsonError($e->getMessage());
+        }
+    }
+
     #[\Maho\Config\Route('/admin/aireports/rename')]
     public function renameAction(): void
     {
@@ -492,6 +529,55 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             Mage::getModel('aireports/report')->load((int) $this->getRequest()->getParam('id'))->delete();
             $this->_jsonSuccess([]);
         } catch (\Throwable $e) {
+            $this->_jsonError($e->getMessage());
+        }
+    }
+
+    #[\Maho\Config\Route('/admin/aireports/pin')]
+    public function pinAction(): void
+    {
+        try {
+            $reportId = (int) $this->getRequest()->getParam('id');
+            /** @var MageAustralia_AiReports_Model_Report $report */
+            $report = Mage::getModel('aireports/report')->load($reportId);
+            if (!$report->getId()) {
+                $this->_jsonError('Report not found.');
+                return;
+            }
+            $report->setData('is_pinned_to_dashboard', 1);
+            $resource = Mage::getSingleton('core/resource');
+            $conn     = $resource->getConnection('core_write');
+            $maxSort  = (int) $conn->fetchOne(
+                'SELECT MAX(pinned_sort_order) FROM '
+                . $resource->getTableName('aireports/report')
+                . ' WHERE is_pinned_to_dashboard = 1'
+            );
+            $report->setData('pinned_sort_order', $maxSort + 1);
+            $report->save();
+            $this->_jsonSuccess(['is_pinned' => true]);
+        } catch (\Throwable $e) {
+            Mage::log('AiReports pin error: ' . $e->getMessage(), Mage::LOG_ERROR, 'aireports.log');
+            $this->_jsonError($e->getMessage());
+        }
+    }
+
+    #[\Maho\Config\Route('/admin/aireports/unpin')]
+    public function unpinAction(): void
+    {
+        try {
+            $reportId = (int) $this->getRequest()->getParam('id');
+            /** @var MageAustralia_AiReports_Model_Report $report */
+            $report = Mage::getModel('aireports/report')->load($reportId);
+            if (!$report->getId()) {
+                $this->_jsonError('Report not found.');
+                return;
+            }
+            $report->setData('is_pinned_to_dashboard', 0);
+            $report->setData('pinned_sort_order', 0);
+            $report->save();
+            $this->_jsonSuccess(['is_pinned' => false]);
+        } catch (\Throwable $e) {
+            Mage::log('AiReports unpin error: ' . $e->getMessage(), Mage::LOG_ERROR, 'aireports.log');
             $this->_jsonError($e->getMessage());
         }
     }
