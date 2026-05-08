@@ -49,6 +49,14 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
         return ['primary' => 'line_chart'];
     }
 
+    /**
+     * Drilldown is not applicable to time_series (single-value series, not record aggregations).
+     */
+    public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
+    {
+        return null;
+    }
+
     public function execute(array $args, array $scopeStoreIds): array
     {
         $conn      = Mage::getSingleton('core/resource')->getConnection('core_read');

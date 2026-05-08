@@ -215,6 +215,129 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         return $shaped;
     }
 
+    /**
+     * Return up to 100 contributing order_item rows for the given result row.
+     * Returns null for order_status dimension (no link_id to join on).
+     *
+     * @param array<string, mixed> $args
+     * @param int[]                $scopeStoreIds
+     * @param array<string, mixed> $rowKey  expects keys: link_id (int|null), label (string)
+     * @return array<int, array<string, mixed>>|null
+     */
+    public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
+    {
+        $dimension = $args['dimension'] ?? '';
+
+        // order_status has no link_id - drilldown not supported.
+        if ($dimension === 'order_status') {
+            return null;
+        }
+
+        $linkId = isset($rowKey['link_id']) && $rowKey['link_id'] !== null
+            ? (int) $rowKey['link_id']
+            : null;
+
+        if ($linkId === null && $dimension !== 'customer') {
+            return null;
+        }
+
+        $conn   = Mage::getSingleton('core/resource')->getConnection('core_read');
+        $r      = Mage::getSingleton('core/resource');
+        $period = (new MageAustralia_AiReports_Model_PeriodNormalizer())->resolve($args['period']);
+
+        return $this->buildDrillRows($conn, $r, $dimension, $linkId, $scopeStoreIds, $period);
+    }
+
+    /**
+     * @param int[] $scopeStoreIds
+     * @param array{from:string,to:string} $period
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildDrillRows(
+        Maho\Db\Adapter\AdapterInterface $conn,
+        Mage_Core_Model_Resource $r,
+        string $dimension,
+        ?int $linkId,
+        array $scopeStoreIds,
+        array $period,
+    ): array {
+        $orderItem = $r->getTableName('sales/order_item');
+        $order     = $r->getTableName('sales/order');
+
+        $select = $conn->select()
+            ->from(['oi' => $orderItem], [])
+            ->joinInner(['o' => $order], 'o.entity_id = oi.order_id', [])
+            ->where('o.created_at >= ?', $period['from'])
+            ->where('o.created_at <= ?', $period['to'])
+            ->where('o.state NOT IN (?)', ['canceled', 'closed'])
+            ->order('o.created_at DESC')
+            ->limit(100);
+
+        if (!empty($scopeStoreIds)) {
+            $select->where('o.store_id IN (?)', $scopeStoreIds);
+        }
+
+        switch ($dimension) {
+            case 'product':
+            case 'sku':
+            case 'category':
+            case 'brand':
+                $select
+                    ->columns([
+                        'order_increment_id' => 'o.increment_id',
+                        'customer_email'     => 'o.customer_email',
+                        'qty_ordered'        => 'oi.qty_ordered',
+                        'row_total'          => new Maho\Db\Expr('oi.row_total - oi.discount_amount'),
+                        'created_at'         => 'o.created_at',
+                    ])
+                    ->where('oi.product_id = ?', $linkId);
+                break;
+
+            case 'customer':
+                if ($linkId !== null) {
+                    $select->where('o.customer_id = ?', $linkId);
+                } else {
+                    $select->where('o.customer_id IS NULL');
+                }
+                $select->columns([
+                    'order_increment_id' => 'o.increment_id',
+                    'sku'                => 'oi.sku',
+                    'qty_ordered'        => 'oi.qty_ordered',
+                    'row_total'          => new Maho\Db\Expr('oi.row_total - oi.discount_amount'),
+                    'created_at'         => 'o.created_at',
+                ]);
+                break;
+
+            case 'store':
+                $select
+                    ->columns([
+                        'order_increment_id' => 'o.increment_id',
+                        'customer_email'     => 'o.customer_email',
+                        'sku'                => 'oi.sku',
+                        'qty_ordered'        => 'oi.qty_ordered',
+                        'row_total'          => new Maho\Db\Expr('oi.row_total - oi.discount_amount'),
+                        'created_at'         => 'o.created_at',
+                    ])
+                    ->where('o.store_id = ?', $linkId);
+                break;
+
+            default:
+                return [];
+        }
+
+        $raw = $conn->fetchAll($select);
+        return array_map(function (array $row): array {
+            foreach (['qty_ordered', 'row_total'] as $k) {
+                if (array_key_exists($k, $row)) {
+                    $row[$k] = is_numeric($row[$k])
+                        ? ((float) $row[$k] === floor((float) $row[$k]) ? (int) $row[$k] : (float) $row[$k])
+                        : $row[$k];
+                }
+            }
+            return $row;
+        }, $raw);
+    }
+
     private function castNumeric(mixed $raw): int|float
     {
         if (!is_numeric($raw)) {

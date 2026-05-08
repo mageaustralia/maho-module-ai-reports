@@ -58,6 +58,27 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
     }
 
     /**
+     * Return up to 100 contributing order_item rows for the given result row.
+     * Delegates to TopN's drill logic since Breakdown reuses the same base query.
+     *
+     * @param array<string, mixed> $args
+     * @param int[]                $scopeStoreIds
+     * @param array<string, mixed> $rowKey  expects keys: link_id (int|null), label (string)
+     * @return array<int, array<string, mixed>>|null
+     */
+    public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
+    {
+        // order_status has no link_id - drilldown not supported.
+        if (($args['dimension'] ?? '') === 'order_status') {
+            return null;
+        }
+
+        // Breakdown shares the same dimension logic as TopN; delegate.
+        $topN = new MageAustralia_AiReports_Model_Primitive_TopN();
+        return $topN->drill($args, $scopeStoreIds, $rowKey);
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $rawRows  rows with label, link_id, value
      * @return array<int, array<string, mixed>>
      */

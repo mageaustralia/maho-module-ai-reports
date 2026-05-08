@@ -26,6 +26,11 @@ class MageAustralia_AiReports_Block_Adminhtml_Ask extends Mage_Adminhtml_Block_T
         return $this->getUrl('adminhtml/aireports/exportCsv');
     }
 
+    public function getDrillUrl(): string
+    {
+        return $this->getUrl('adminhtml/aireports/drill');
+    }
+
     /** @return array<int, array{label:string, prompt:string}> */
     public function getSuggestions(): array
     {

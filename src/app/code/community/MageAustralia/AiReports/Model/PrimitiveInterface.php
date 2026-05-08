@@ -34,4 +34,15 @@ interface MageAustralia_AiReports_Model_PrimitiveInterface
      * @return array{primary: string, secondary?: string}
      */
     public function getDefaultRender(): array;
+
+    /**
+     * Return the contributing records for a specific result row, or null if drilldown
+     * is not supported for this primitive.
+     *
+     * @param array<string, mixed> $args          The original query plan args
+     * @param int[]                $scopeStoreIds Effective store IDs (already ACL-intersected)
+     * @param array<string, mixed> $rowKey        The row to drill into - typically {link_id, label}
+     * @return array<int, array<string, mixed>>|null  Sub-rows or null if not supported
+     */
+    public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array;
 }

@@ -32,6 +32,7 @@ final class PrimitiveExecutorTest extends TestCase
             public function getArgsSchema(): array { return ['type' => 'object']; }
             public function execute(array $a, array $s): array { return $this->rows; }
             public function getDefaultRender(): array { return ['primary' => 'table']; }
+            public function drill(array $a, array $s, array $k): ?array { return null; }
         };
     }
 
@@ -46,6 +47,7 @@ final class PrimitiveExecutorTest extends TestCase
                 return [['label' => 'A', 'value' => 1]];
             }
             public function getDefaultRender(): array { return ['primary' => 'table']; }
+            public function drill(array $a, array $s, array $k): ?array { return null; }
         });
 
         $exec = new PrimitiveExecutor($reg, new RenderEnvelopeBuilder());

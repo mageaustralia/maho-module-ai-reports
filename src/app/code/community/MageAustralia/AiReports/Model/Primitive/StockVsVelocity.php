@@ -58,6 +58,14 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
         return ['primary' => 'table'];
     }
 
+    /**
+     * Drilldown is not applicable to stock_vs_velocity (single-value series, not record aggregations).
+     */
+    public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
+    {
+        return null;
+    }
+
     public function execute(array $args, array $scopeStoreIds): array
     {
         return $this->shapeRows($this->fetchRawRows($args, $scopeStoreIds));
