@@ -26,7 +26,7 @@ class MageAustralia_AiReports_Block_Adminhtml_SavedView extends Mage_Adminhtml_B
         $this->_addButton('rerun', [
             'label'   => $this->__('Re-run'),
             'onclick' => 'aireportsSavedView.rerun()',
-            'class'   => 'go',
+            'class'   => 'save',
         ]);
 
         $this->_addButton('export', [

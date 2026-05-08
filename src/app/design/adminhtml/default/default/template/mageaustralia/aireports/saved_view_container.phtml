@@ -7,5 +7,7 @@
         </tr>
     </table>
 </div>
-<?= $this->getChildHtml('tabs') ?>
-<div id="aireports_savedview_tabs"></div>
+<div class="aireports-tabs-layout">
+    <div class="aireports-tabs-layout__nav"><?= $this->getChildHtml('tabs') ?></div>
+    <div class="aireports-tabs-layout__content"><div id="aireports_savedview_tabs"></div></div>
+</div>
