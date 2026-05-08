@@ -46,12 +46,10 @@
         <span class="aireports-schedule__hint"><?= $this->__('Optional - appears in [brackets] before the report title') ?></span>
     </div>
 
-    <div class="aireports-schedule__actions">
-        <button type="button" class="scalable save" data-schedule-tab-save>
-            <?= $this->__('Save Schedule') ?>
-        </button>
-    </div>
-    <div class="aireports-schedule__status" data-schedule-tab-status style="display:none;margin-top:0.5rem;"></div>
+    <button type="button" class="scalable save" data-schedule-tab-save style="display:none;">
+        <?= $this->__('Save Schedule') ?>
+    </button>
+    <div class="aireports-schedule__status" data-schedule-tab-status style="margin-top:0.5rem;"></div>
 </div>
 <script>
 (function () {

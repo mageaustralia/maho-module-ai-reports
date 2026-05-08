@@ -1,11 +1,7 @@
 <?php /** @var MageAustralia_AiReports_Block_Adminhtml_SavedView $this */ ?>
 <div class="content-header">
-    <table cellspacing="0">
-        <tr>
-            <td><?= $this->getHeaderHtml() ?></td>
-            <td class="form-buttons"><?= $this->getButtonsHtml() ?></td>
-        </tr>
-    </table>
+    <?= $this->getHeaderHtml() ?>
+    <p class="content-buttons form-buttons"><?= $this->getButtonsHtml() ?></p>
 </div>
 <div class="aireports-tabs-layout">
     <div class="aireports-tabs-layout__nav"><?= $this->getChildHtml('tabs') ?></div>
