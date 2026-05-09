@@ -122,12 +122,21 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
         // Effective manage_stock: when use_config_manage_stock=1 we defer to the global,
         // otherwise the per-product flag wins. We only want products whose stock is
         // actually being tracked - "Stringing Fees", "Demo Charge", etc. opt out.
-        $manageStockExpr = "(stock.use_config_manage_stock = 1 AND $globalManageStock = 1) "
-                         . "OR (stock.use_config_manage_stock = 0 AND stock.manage_stock = 1)";
+        // Bind the global value rather than interpolating so the column-vs-literal
+        // distinction stays clean if the predicate gets reused in unsafer contexts.
+        $manageStockExpr = $conn->quoteInto(
+            '(stock.use_config_manage_stock = 1 AND ? = 1) '
+            . 'OR (stock.use_config_manage_stock = 0 AND stock.manage_stock = 1)',
+            $globalManageStock,
+        );
 
+        // joinLeft on stock_item so products with no stock_item row at all don't
+        // silently drop (rare, but happens for legacy/imported SKUs); the
+        // manage_stock predicate then filters them out only when it's certain
+        // they opted out (use_config=0 AND manage_stock=0).
         $select = $conn->select()
             ->from(['p' => $r->getTableName('catalog/product')], ['product_id' => 'entity_id', 'sku'])
-            ->joinInner(['stock' => $r->getTableName('cataloginventory/stock_item')],
+            ->joinLeft(['stock' => $r->getTableName('cataloginventory/stock_item')],
                 'stock.product_id = p.entity_id', ['qty_on_hand' => 'stock.qty'])
             ->joinLeft(['sales' => new Maho\Db\Expr('(' . $salesSubSelect . ')')],
                 'sales.product_id = p.entity_id', [
@@ -135,7 +144,7 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
                     'name'     => 'sales.name',
                 ])
             ->where('p.entity_id IN (?)', $productIds)
-            ->where($manageStockExpr);
+            ->where('stock.item_id IS NULL OR ' . $manageStockExpr);
 
         $rows = $conn->fetchAll($select);
         foreach ($rows as &$row) {

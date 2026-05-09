@@ -232,6 +232,11 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         return $shaped;
     }
 
+    public function supportsDrilldown(): bool
+    {
+        return true;
+    }
+
     /**
      * Return up to 100 contributing order_item rows for the given result row.
      * Returns null for order_status dimension (no link_id to join on).
@@ -241,11 +246,6 @@ class MageAustralia_AiReports_Model_Primitive_TopN
      * @param array<string, mixed> $rowKey  expects keys: link_id (int|null), label (string)
      * @return array<int, array<string, mixed>>|null
      */
-    public function supportsDrilldown(): bool
-    {
-        return true;
-    }
-
     public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
     {
         $dimension = $args['dimension'] ?? '';
@@ -286,9 +286,14 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         $orderItem = $r->getTableName('sales/order_item');
         $order     = $r->getTableName('sales/order');
 
-        $tz     = new \DateTimeZone(Mage::helper('aireports')->getStoreTimezone());
-        $offset = (new \DateTime('now', $tz))->format('P');
-        $createdAtLocal = new Maho\Db\Expr("CONVERT_TZ(o.created_at, '+00:00', '$offset')");
+        // Pass the IANA tz name (not a fixed offset captured "now") so MySQL applies
+        // the right offset per-row across DST boundaries. Requires `mysql_tzinfo_to_sql`
+        // to have been loaded; if it hasn't, CONVERT_TZ returns NULL and the columns
+        // come through as NULL, which is more visible than a silent hour-shift.
+        $storeTz        = Mage::helper('aireports')->getStoreTimezone();
+        $createdAtLocal = new Maho\Db\Expr(
+            $conn->quoteInto("CONVERT_TZ(o.created_at, 'UTC', ?)", $storeTz),
+        );
 
         $select = $conn->select()
             ->from(['oi' => $orderItem], [])

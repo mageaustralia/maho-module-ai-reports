@@ -118,6 +118,11 @@ class MageAustralia_AiReports_Model_Primitive_Growth
         return $shaped;
     }
 
+    public function supportsDrilldown(): bool
+    {
+        return true;
+    }
+
     /**
      * Return up to 100 contributing order_item rows for the given result row,
      * tagged with a 'period' column ('A' or 'B') so the sub-table can show
@@ -128,11 +133,6 @@ class MageAustralia_AiReports_Model_Primitive_Growth
      * @param array<string, mixed> $rowKey  expects keys: link_id (int|null), label (string)
      * @return array<int, array<string, mixed>>|null
      */
-    public function supportsDrilldown(): bool
-    {
-        return true;
-    }
-
     public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
     {
         $dimension = $args['dimension'] ?? '';
