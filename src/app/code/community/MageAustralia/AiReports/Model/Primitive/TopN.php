@@ -87,9 +87,26 @@ class MageAustralia_AiReports_Model_Primitive_TopN
 
         $dimensionExprs = $this->dimensionExprs($r, $args['dimension']);
 
-        $select = $conn->select()
-            ->from(['oi' => $orderItem], [])
-            ->joinInner(['o' => $order], 'o.entity_id = oi.order_id', []);
+        // Item-level metrics aggregate order_item rows; order-level metrics work off the
+        // order header. Joining order_item when only order-level metrics are requested
+        // multiplies each order by its line-item count and inflates the totals.
+        $itemLevelMetrics    = ['qty_sold', 'revenue', 'margin'];
+        $itemLevelDimensions = ['product', 'sku', 'category', 'brand'];
+        $extras              = $args['display_metrics'] ?? [];
+
+        $needsItemTable =
+            in_array($args['metric'], $itemLevelMetrics, true)
+            || !empty(array_intersect($extras, $itemLevelMetrics))
+            || in_array($args['dimension'], $itemLevelDimensions, true)
+            || !empty($args['product_ids']);
+
+        $select = $conn->select();
+        if ($needsItemTable) {
+            $select->from(['oi' => $orderItem], [])
+                   ->joinInner(['o' => $order], 'o.entity_id = oi.order_id', []);
+        } else {
+            $select->from(['o' => $order], []);
+        }
 
         if ($args['dimension'] === 'store') {
             $select->joinLeft(['cs' => $r->getTableName('core/store')], 'cs.store_id = o.store_id', []);
@@ -101,7 +118,6 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             'value'   => new Maho\Db\Expr($valueExprs[$args['metric']]),
         ];
 
-        $extras = $args['display_metrics'] ?? [];
         foreach ($extras as $extra) {
             if ($extra === $args['metric']) continue;
             if (!isset($valueExprs[$extra])) continue;
@@ -225,6 +241,11 @@ class MageAustralia_AiReports_Model_Primitive_TopN
      * @param array<string, mixed> $rowKey  expects keys: link_id (int|null), label (string)
      * @return array<int, array<string, mixed>>|null
      */
+    public function supportsDrilldown(): bool
+    {
+        return true;
+    }
+
     public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
     {
         $dimension = $args['dimension'] ?? '';
@@ -265,6 +286,10 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         $orderItem = $r->getTableName('sales/order_item');
         $order     = $r->getTableName('sales/order');
 
+        $tz     = new \DateTimeZone(Mage::helper('aireports')->getStoreTimezone());
+        $offset = (new \DateTime('now', $tz))->format('P');
+        $createdAtLocal = new Maho\Db\Expr("CONVERT_TZ(o.created_at, '+00:00', '$offset')");
+
         $select = $conn->select()
             ->from(['oi' => $orderItem], [])
             ->joinInner(['o' => $order], 'o.entity_id = oi.order_id', [])
@@ -278,6 +303,11 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             $select->where('o.store_id IN (?)', $scopeStoreIds);
         }
 
+        // For dimensions where the drill returns all items in matching orders (store, customer),
+        // hide the simple-child rows of configurable/bundle parents so we don't double-list each
+        // line. For product/sku drills the explicit product_id filter already picks one side.
+        $hideChildren = in_array($dimension, ['store', 'customer'], true);
+
         switch ($dimension) {
             case 'product':
             case 'sku':
@@ -285,11 +315,12 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             case 'brand':
                 $select
                     ->columns([
+                        'order_id'           => 'o.entity_id',
                         'order_increment_id' => 'o.increment_id',
                         'customer_email'     => 'o.customer_email',
                         'qty_ordered'        => 'oi.qty_ordered',
                         'row_total'          => new Maho\Db\Expr('oi.row_total - oi.discount_amount'),
-                        'created_at'         => 'o.created_at',
+                        'created_at'         => $createdAtLocal,
                     ])
                     ->where('oi.product_id = ?', $linkId);
                 break;
@@ -301,23 +332,25 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                     $select->where('o.customer_id IS NULL');
                 }
                 $select->columns([
+                    'order_id'           => 'o.entity_id',
                     'order_increment_id' => 'o.increment_id',
                     'sku'                => 'oi.sku',
                     'qty_ordered'        => 'oi.qty_ordered',
                     'row_total'          => new Maho\Db\Expr('oi.row_total - oi.discount_amount'),
-                    'created_at'         => 'o.created_at',
+                    'created_at'         => $createdAtLocal,
                 ]);
                 break;
 
             case 'store':
                 $select
                     ->columns([
+                        'order_id'           => 'o.entity_id',
                         'order_increment_id' => 'o.increment_id',
                         'customer_email'     => 'o.customer_email',
                         'sku'                => 'oi.sku',
                         'qty_ordered'        => 'oi.qty_ordered',
                         'row_total'          => new Maho\Db\Expr('oi.row_total - oi.discount_amount'),
-                        'created_at'         => 'o.created_at',
+                        'created_at'         => $createdAtLocal,
                     ])
                     ->where('o.store_id = ?', $linkId);
                 break;
@@ -326,8 +359,21 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                 return [];
         }
 
+        if ($hideChildren) {
+            $select->where('oi.parent_item_id IS NULL');
+        }
+
         $raw = $conn->fetchAll($select);
         return array_map(function (array $row): array {
+            if (isset($row['order_id'])) {
+                $row['__links'] = [
+                    'order_increment_id' => $this->buildAdminUrl(
+                        'adminhtml/sales_order/view',
+                        ['order_id' => (int) $row['order_id']],
+                    ),
+                ];
+                unset($row['order_id']);
+            }
             foreach (['qty_ordered', 'row_total'] as $k) {
                 if (array_key_exists($k, $row)) {
                     $row[$k] = is_numeric($row[$k])

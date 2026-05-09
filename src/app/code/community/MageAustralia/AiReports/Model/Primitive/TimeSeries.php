@@ -57,6 +57,11 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
         return null;
     }
 
+    public function supportsDrilldown(): bool
+    {
+        return false;
+    }
+
     public function execute(array $args, array $scopeStoreIds): array
     {
         $conn       = Mage::getSingleton('core/resource')->getConnection('core_read');
@@ -111,10 +116,21 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
             'aov'         => 'SUM(o.grand_total) / NULLIF(COUNT(DISTINCT o.entity_id), 0)',
         };
 
-        $select = $conn->select()
-            ->from(['oi' => $r->getTableName('sales/order_item')], [])
-            ->joinInner(['o' => $r->getTableName('sales/order')], 'o.entity_id = oi.order_id', [])
-            ->columns([
+        // Item-level metrics (qty_sold, revenue) aggregate over order_item rows.
+        // Order-level metrics (net_revenue, aov) would be multiplied by N items per
+        // order if we joined - so we skip the join unless a product_ids filter forces it.
+        $isItemLevel    = in_array($args['metric'], ['qty_sold', 'revenue'], true);
+        $needsItemTable = $isItemLevel || !empty($args['product_ids']);
+
+        $select = $conn->select();
+        if ($needsItemTable) {
+            $select->from(['oi' => $r->getTableName('sales/order_item')], [])
+                   ->joinInner(['o' => $r->getTableName('sales/order')], 'o.entity_id = oi.order_id', []);
+        } else {
+            $select->from(['o' => $r->getTableName('sales/order')], []);
+        }
+
+        $select->columns([
                 'date'         => new Maho\Db\Expr($bucketExpr),
                 'series_label' => new Maho\Db\Expr($conn->quote($seriesLabel)),
                 'value'        => new Maho\Db\Expr($valueExpr),

@@ -71,7 +71,9 @@ var AiReportsUtil = (function () {
             target.appendChild(banner);
         }
 
-        env.blocks.forEach(function (block) { target.appendChild(renderBlock(block, ctx, drillUrl)); });
+        // Suppress per-row drill chevrons for primitives that don't support drilldown.
+        var effectiveDrillUrl = (env.meta && env.meta.supports_drilldown === false) ? null : drillUrl;
+        env.blocks.forEach(function (block) { target.appendChild(renderBlock(block, ctx, effectiveDrillUrl)); });
 
         var actions = document.createElement('div');
         actions.className = 'aireports-result__actions';
@@ -281,7 +283,8 @@ var AiReportsUtil = (function () {
             empty.textContent = 'No contributing records found.';
             return empty;
         }
-        var keys = Object.keys(rows[0]);
+        // __links is a per-row map of { columnKey: url } and shouldn't render as its own column.
+        var keys = Object.keys(rows[0]).filter(function (k) { return k !== '__links'; });
         var table = document.createElement('table');
         table.className = 'aireports-drill-table';
         var thead = document.createElement('thead');
@@ -292,16 +295,25 @@ var AiReportsUtil = (function () {
         var tbody = document.createElement('tbody');
         rows.forEach(function (row) {
             var tr = document.createElement('tr');
+            var links = row.__links || {};
             keys.forEach(function (k) {
                 var td = document.createElement('td');
                 var v = row[k];
-                // Format numeric columns.
+                var text;
                 if (k === 'row_total') {
-                    td.textContent = Number(v).toLocaleString(undefined, { style: 'currency', currency: 'AUD' });
+                    text = Number(v).toLocaleString(undefined, { style: 'currency', currency: 'AUD' });
                 } else if (k === 'qty_ordered') {
-                    td.textContent = Number(v).toLocaleString();
+                    text = Number(v).toLocaleString();
                 } else {
-                    td.textContent = v === null || v === undefined ? '-' : String(v);
+                    text = v === null || v === undefined ? '-' : String(v);
+                }
+                if (links[k] && v !== null && v !== undefined) {
+                    var a = document.createElement('a');
+                    a.href = links[k];
+                    a.textContent = text;
+                    td.appendChild(a);
+                } else {
+                    td.textContent = text;
                 }
                 tr.appendChild(td);
             });

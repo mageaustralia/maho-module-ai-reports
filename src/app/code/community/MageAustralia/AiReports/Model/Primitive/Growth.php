@@ -128,6 +128,11 @@ class MageAustralia_AiReports_Model_Primitive_Growth
      * @param array<string, mixed> $rowKey  expects keys: link_id (int|null), label (string)
      * @return array<int, array<string, mixed>>|null
      */
+    public function supportsDrilldown(): bool
+    {
+        return true;
+    }
+
     public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
     {
         $dimension = $args['dimension'] ?? '';

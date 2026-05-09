@@ -45,4 +45,11 @@ interface MageAustralia_AiReports_Model_PrimitiveInterface
      * @return array<int, array<string, mixed>>|null  Sub-rows or null if not supported
      */
     public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array;
+
+    /**
+     * Whether the renderer should offer a per-row drilldown chevron for results from this
+     * primitive. False for primitives whose rows don't represent record aggregations
+     * (single-value time series, stock-on-hand snapshots, etc).
+     */
+    public function supportsDrilldown(): bool;
 }

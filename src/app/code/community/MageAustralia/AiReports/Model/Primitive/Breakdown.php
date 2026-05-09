@@ -78,6 +78,11 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
         return $topN->drill($args, $scopeStoreIds, $rowKey);
     }
 
+    public function supportsDrilldown(): bool
+    {
+        return true;
+    }
+
     /**
      * @param array<int, array<string, mixed>> $rawRows  rows with label, link_id, value
      * @return array<int, array<string, mixed>>

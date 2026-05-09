@@ -66,6 +66,11 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
         return null;
     }
 
+    public function supportsDrilldown(): bool
+    {
+        return false;
+    }
+
     public function execute(array $args, array $scopeStoreIds): array
     {
         return $this->shapeRows($this->fetchRawRows($args, $scopeStoreIds));
@@ -104,8 +109,8 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
                 'name'       => new Maho\Db\Expr('MAX(oi2.name)'),
             ])
             ->joinInner(['o2' => $r->getTableName('sales/order')], 'o2.entity_id = oi2.order_id', [])
-            ->where('o2.created_at >= ?', $from)
-            ->where('o2.created_at <= ?', $to)
+            ->where('o2.created_at >= ?', $range['from'])
+            ->where('o2.created_at <= ?', $range['to'])
             ->where('o2.state NOT IN (?)', ['canceled', 'closed'])
             ->group('oi2.product_id');
 
@@ -113,16 +118,24 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
             $salesSubSelect->where('o2.store_id IN (?)', $scopeStoreIds);
         }
 
+        $globalManageStock = (int) Mage::getStoreConfig('cataloginventory/item_options/manage_stock');
+        // Effective manage_stock: when use_config_manage_stock=1 we defer to the global,
+        // otherwise the per-product flag wins. We only want products whose stock is
+        // actually being tracked - "Stringing Fees", "Demo Charge", etc. opt out.
+        $manageStockExpr = "(stock.use_config_manage_stock = 1 AND $globalManageStock = 1) "
+                         . "OR (stock.use_config_manage_stock = 0 AND stock.manage_stock = 1)";
+
         $select = $conn->select()
             ->from(['p' => $r->getTableName('catalog/product')], ['product_id' => 'entity_id', 'sku'])
-            ->joinLeft(['stock' => $r->getTableName('cataloginventory/stock_item')],
+            ->joinInner(['stock' => $r->getTableName('cataloginventory/stock_item')],
                 'stock.product_id = p.entity_id', ['qty_on_hand' => 'stock.qty'])
             ->joinLeft(['sales' => new Maho\Db\Expr('(' . $salesSubSelect . ')')],
                 'sales.product_id = p.entity_id', [
                     'qty_sold' => new Maho\Db\Expr('COALESCE(sales.qty_sold, 0)'),
                     'name'     => 'sales.name',
                 ])
-            ->where('p.entity_id IN (?)', $productIds);
+            ->where('p.entity_id IN (?)', $productIds)
+            ->where($manageStockExpr);
 
         $rows = $conn->fetchAll($select);
         foreach ($rows as &$row) {

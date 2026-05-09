@@ -13,6 +13,6 @@ class MageAustralia_AiReports_Model_Resource_RunLog extends Mage_Core_Model_Reso
 {
     protected function _construct()
     {
-        $this->_init('aireports/run_log', 'log_id');
+        $this->_init('aireports/runLog', 'log_id');
     }
 }

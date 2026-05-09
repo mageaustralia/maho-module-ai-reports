@@ -14,6 +14,6 @@ class MageAustralia_AiReports_Model_Resource_RunLog_Collection
 {
     protected function _construct()
     {
-        $this->_init('aireports/run_log');
+        $this->_init('aireports/runLog');
     }
 }

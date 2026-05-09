@@ -32,7 +32,7 @@ foreach ([
 }
 
 // Run-log table for cron + email audit trail
-$logTable = $this->getTable('aireports/run_log');
+$logTable = $this->getTable('aireports/runLog');
 if (!$conn->isTableExists($logTable)) {
     $tableObj = $conn->newTable($logTable)
         ->addColumn('log_id',       Maho\Db\Ddl\Table::TYPE_INTEGER, null,  ['identity' => true, 'unsigned' => true, 'nullable' => false, 'primary' => true])

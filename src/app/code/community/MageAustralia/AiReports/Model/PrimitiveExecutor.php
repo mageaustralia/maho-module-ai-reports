@@ -48,6 +48,7 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
             elapsedMs: $elapsedMs,
             executedAt: new \DateTimeImmutable('now'),
             rowCount: count($rows),
+            supportsDrilldown: $primitive->supportsDrilldown(),
         );
     }
 

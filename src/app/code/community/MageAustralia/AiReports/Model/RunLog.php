@@ -19,7 +19,7 @@ class MageAustralia_AiReports_Model_RunLog extends Mage_Core_Model_Abstract
 
     protected function _construct()
     {
-        $this->_init('aireports/run_log');
+        $this->_init('aireports/runLog');
     }
 
     /**
@@ -48,7 +48,7 @@ class MageAustralia_AiReports_Model_RunLog extends Mage_Core_Model_Abstract
         $started = (new \DateTimeImmutable('@' . (int) $startTime))->format('Y-m-d H:i:s');
 
         /** @var self $log */
-        $log = Mage::getModel('aireports/run_log');
+        $log = Mage::getModel('aireports/runLog');
         $log->setData([
             'report_id'     => $reportId,
             'triggered_by'  => $triggeredBy,

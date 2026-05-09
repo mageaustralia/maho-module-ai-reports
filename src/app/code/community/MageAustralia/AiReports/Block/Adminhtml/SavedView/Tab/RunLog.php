@@ -28,7 +28,7 @@ class MageAustralia_AiReports_Block_Adminhtml_SavedView_Tab_RunLog extends Mage_
     {
         $reportId = (int) Mage::registry('aireports_current_report')?->getId();
         /** @var MageAustralia_AiReports_Model_Resource_RunLog_Collection $collection */
-        $collection = Mage::getResourceModel('aireports/run_log_collection')
+        $collection = Mage::getResourceModel('aireports/runLog_collection')
             ->addFieldToFilter('report_id', $reportId);
         $this->setCollection($collection);
         return parent::_prepareCollection();

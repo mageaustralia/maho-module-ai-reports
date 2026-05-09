@@ -50,6 +50,11 @@ class MageAustralia_AiReports_Model_Primitive_LowStock
         return null;
     }
 
+    public function supportsDrilldown(): bool
+    {
+        return false;
+    }
+
     public function execute(array $args, array $scopeStoreIds): array
     {
         $svv = new MageAustralia_AiReports_Model_Primitive_StockVsVelocity();

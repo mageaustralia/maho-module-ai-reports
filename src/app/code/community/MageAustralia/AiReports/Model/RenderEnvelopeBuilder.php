@@ -25,19 +25,21 @@ class MageAustralia_AiReports_Model_RenderEnvelopeBuilder
         int $elapsedMs,
         \DateTimeImmutable $executedAt,
         int $rowCount,
+        bool $supportsDrilldown = true,
     ): array {
         return [
             'title'     => $title,
             'narrative' => $narrative,
             'blocks'    => array_values($blocks),
             'meta'      => [
-                'executed_at'     => $executedAt->format('c'),
-                'elapsed_ms'      => $elapsedMs,
-                'row_count'       => $rowCount,
-                'scope_store_ids' => array_values($scopeStoreIds),
-                'scope_warning'   => $scopeWarning
+                'executed_at'        => $executedAt->format('c'),
+                'elapsed_ms'         => $elapsedMs,
+                'row_count'          => $rowCount,
+                'scope_store_ids'    => array_values($scopeStoreIds),
+                'scope_warning'      => $scopeWarning
                     ? 'Some requested stores were filtered out by your access scope.'
                     : null,
+                'supports_drilldown' => $supportsDrilldown,
             ],
         ];
     }
