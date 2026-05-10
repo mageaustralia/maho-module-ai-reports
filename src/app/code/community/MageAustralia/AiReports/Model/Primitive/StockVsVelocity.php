@@ -181,16 +181,20 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
                 return array_map('intval', $conn->fetchCol($sel));
 
             case 'skus':
-                $sel = $conn->select()
-                    ->from(['p' => $r->getTableName('catalog/product')], ['entity_id'])
-                    ->where('p.sku IN (?)', $filter['values']);
-                return array_map('intval', $conn->fetchCol($sel));
+                $collection = Mage::getResourceModel('catalog/product_collection')
+                    ->addAttributeToFilter('sku', ['in' => $filter['values']]);
+                return array_map('intval', $collection->getAllIds());
 
             case 'category_id':
-                $sel = $conn->select()
-                    ->from(['ccp' => $r->getTableName('catalog/category_product')], ['product_id'])
-                    ->where('ccp.category_id = ?', (int) $filter['value']);
-                return array_map('intval', $conn->fetchCol($sel));
+                // getCategory()->getProductCollection() picks up the standard
+                // catalog_product_collection_load_before observer chain (e.g.
+                // store-scoping, visibility filters that other modules attach)
+                // and respects category_product_index when available.
+                $category = Mage::getModel('catalog/category')->load((int) $filter['value']);
+                if (!$category->getId()) {
+                    return [];
+                }
+                return array_map('intval', $category->getProductCollection()->getAllIds());
         }
         return [];
     }
