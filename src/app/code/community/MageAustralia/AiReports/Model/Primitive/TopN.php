@@ -13,14 +13,17 @@ class MageAustralia_AiReports_Model_Primitive_TopN
     implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
     use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
+    #[\Override]
     public function getName(): string { return 'top_n'; }
 
+    #[\Override]
     public function getDescription(): string
     {
         return 'Returns the top N records ranked by a metric over a period, optionally filtered by store. ' .
                'Use when the user asks "top sellers", "best customers", "highest-revenue categories", etc.';
     }
 
+    #[\Override]
     public function getArgsSchema(): array
     {
         return [
@@ -51,11 +54,13 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         ];
     }
 
+    #[\Override]
     public function getDefaultRender(): array
     {
         return ['primary' => 'bar_chart', 'secondary' => 'table'];
     }
 
+    #[\Override]
     public function execute(array $args, array $scopeStoreIds): array
     {
         $conn   = Mage::getSingleton('core/resource')->getConnection('core_read');
@@ -65,7 +70,12 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         return $this->shapeRows($conn->fetchAll($select), $args['dimension']);
     }
 
-    /** @internal made public for buildable testing only */
+    /**
+     * Public so the Growth primitive can re-use the same projection with
+     * period-shifted args (compares period A vs period B). Not part of a
+     * stable public API beyond AiReports — callers outside this module
+     * should not rely on the signature.
+     */
     public function buildSelect(
         Maho\Db\Adapter\AdapterInterface $conn,
         Mage_Core_Model_Resource $r,
@@ -170,6 +180,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                 'link_id'  => new Maho\Db\Expr('NULL'),
                 'group_by' => 'o.status',
             ],
+            default => throw new InvalidArgumentException("Unsupported dimension: {$dimension}"),
         };
     }
 
@@ -232,6 +243,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         return $shaped;
     }
 
+    #[\Override]
     public function supportsDrilldown(): bool
     {
         return true;
@@ -246,6 +258,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
      * @param array<string, mixed> $rowKey  expects keys: link_id (int|null), label (string)
      * @return array<int, array<string, mixed>>|null
      */
+    #[\Override]
     public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
     {
         $dimension = $args['dimension'] ?? '';
@@ -255,9 +268,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             return null;
         }
 
-        $linkId = isset($rowKey['link_id']) && $rowKey['link_id'] !== null
-            ? (int) $rowKey['link_id']
-            : null;
+        $linkId = isset($rowKey['link_id']) ? (int) $rowKey['link_id'] : null;
 
         if ($linkId === null && $dimension !== 'customer') {
             return null;

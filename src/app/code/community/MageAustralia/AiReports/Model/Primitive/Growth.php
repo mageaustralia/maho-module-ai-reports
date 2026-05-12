@@ -13,14 +13,17 @@ class MageAustralia_AiReports_Model_Primitive_Growth
     implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
     use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
+    #[\Override]
     public function getName(): string { return 'growth'; }
 
+    #[\Override]
     public function getDescription(): string
     {
         return 'Compares a metric across two periods (period_a vs period_b) and returns the top movers ' .
                'sorted by percentage change. Use for "biggest growth", "fastest growing", "biggest declines".';
     }
 
+    #[\Override]
     public function getArgsSchema(): array
     {
         return [
@@ -38,11 +41,13 @@ class MageAustralia_AiReports_Model_Primitive_Growth
         ];
     }
 
+    #[\Override]
     public function getDefaultRender(): array
     {
         return ['primary' => 'table'];
     }
 
+    #[\Override]
     public function execute(array $args, array $scopeStoreIds): array
     {
         $conn   = Mage::getSingleton('core/resource')->getConnection('core_read');
@@ -97,7 +102,7 @@ class MageAustralia_AiReports_Model_Primitive_Growth
 
             $entry = [
                 'label'     => (string) $row['label'],
-                'link_id'   => isset($row['link_id']) && $row['link_id'] !== null ? (int) $row['link_id'] : null,
+                'link_id'   => isset($row['link_id']) ? (int) $row['link_id'] : null,
                 'value_a'   => $a,
                 'value_b'   => $b,
                 'delta_abs' => $deltaAbs,
@@ -118,6 +123,7 @@ class MageAustralia_AiReports_Model_Primitive_Growth
         return $shaped;
     }
 
+    #[\Override]
     public function supportsDrilldown(): bool
     {
         return true;
@@ -133,6 +139,7 @@ class MageAustralia_AiReports_Model_Primitive_Growth
      * @param array<string, mixed> $rowKey  expects keys: link_id (int|null), label (string)
      * @return array<int, array<string, mixed>>|null
      */
+    #[\Override]
     public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
     {
         $dimension = $args['dimension'] ?? '';
@@ -142,9 +149,7 @@ class MageAustralia_AiReports_Model_Primitive_Growth
             return null;
         }
 
-        $linkId = isset($rowKey['link_id']) && $rowKey['link_id'] !== null
-            ? (int) $rowKey['link_id']
-            : null;
+        $linkId = isset($rowKey['link_id']) ? (int) $rowKey['link_id'] : null;
 
         if ($linkId === null && $dimension !== 'customer') {
             return null;

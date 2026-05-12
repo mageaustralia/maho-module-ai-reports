@@ -13,8 +13,10 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
     implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
     use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
+    #[\Override]
     public function getName(): string { return 'stock_vs_velocity'; }
 
+    #[\Override]
     public function getDescription(): string
     {
         return 'For a set of products, returns current stock-on-hand alongside sales velocity over the ' .
@@ -22,6 +24,7 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
                '{type:"top_n_sellers", n, period}, {type:"skus", values}, {type:"category_id", value}.';
     }
 
+    #[\Override]
     public function getArgsSchema(): array
     {
         return [
@@ -53,6 +56,7 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
         ];
     }
 
+    #[\Override]
     public function getDefaultRender(): array
     {
         return ['primary' => 'table'];
@@ -61,16 +65,19 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
     /**
      * Drilldown is not applicable to stock_vs_velocity (single-value series, not record aggregations).
      */
+    #[\Override]
     public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
     {
         return null;
     }
 
+    #[\Override]
     public function supportsDrilldown(): bool
     {
         return false;
     }
 
+    #[\Override]
     public function execute(array $args, array $scopeStoreIds): array
     {
         return $this->shapeRows($this->fetchRawRows($args, $scopeStoreIds));
