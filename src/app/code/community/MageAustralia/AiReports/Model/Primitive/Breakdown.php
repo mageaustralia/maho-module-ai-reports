@@ -28,8 +28,8 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
             'required'             => ['metric', 'dimension', 'period'],
             'additionalProperties' => false,
             'properties'           => [
-                'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count']],
-                'dimension' => ['type' => 'string', 'enum' => ['product', 'category', 'brand', 'store', 'order_status']],
+                'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'discount_total', 'tax_total', 'shipping_total']],
+                'dimension' => ['type' => 'string', 'enum' => ['product', 'category', 'brand', 'store', 'order_status', 'payment_method', 'shipping_method', 'region', 'country', 'coupon_code']],
                 'period'    => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'store_ids'   => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],
                 'product_ids' => [

@@ -31,8 +31,8 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             'required'             => ['metric', 'dimension', 'period', 'limit'],
             'additionalProperties' => false,
             'properties'           => [
-                'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin']],
-                'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'category', 'brand', 'customer', 'store', 'order_status']],
+                'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin', 'discount_total', 'tax_total', 'shipping_total']],
+                'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'category', 'brand', 'customer', 'store', 'order_status', 'payment_method', 'shipping_method', 'region', 'country', 'coupon_code']],
                 'period'    => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'limit'     => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
                 'store_ids'   => [
@@ -46,7 +46,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                 ],
                 'display_metrics' => [
                     'type'        => ['array', 'null'],
-                    'items'       => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin']],
+                    'items'       => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin', 'discount_total', 'tax_total', 'shipping_total']],
                     'description' => 'Additional metric columns to show alongside the sort metric. The `metric` arg still determines the sort order; these are display-only.',
                     'maxItems'    => 4,
                 ],
@@ -87,12 +87,15 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         $order     = $r->getTableName('sales/order');
 
         $valueExprs = [
-            'qty_sold'    => 'SUM(oi.qty_ordered)',
-            'revenue'     => 'SUM(oi.row_total - oi.discount_amount)',
-            'net_revenue' => 'SUM(o.base_total_invoiced - o.base_total_refunded)',
-            'order_count' => 'COUNT(DISTINCT o.entity_id)',
-            'aov'         => 'SUM(o.grand_total) / NULLIF(COUNT(DISTINCT o.entity_id), 0)',
-            'margin'      => 'SUM(oi.row_total - oi.discount_amount - (oi.qty_ordered * oi.base_cost))',
+            'qty_sold'       => 'SUM(oi.qty_ordered)',
+            'revenue'        => 'SUM(oi.row_total - oi.discount_amount)',
+            'net_revenue'    => 'SUM(o.base_total_invoiced - o.base_total_refunded)',
+            'order_count'    => 'COUNT(DISTINCT o.entity_id)',
+            'aov'            => 'SUM(o.grand_total) / NULLIF(COUNT(DISTINCT o.entity_id), 0)',
+            'margin'         => 'SUM(oi.row_total - oi.discount_amount - (oi.qty_ordered * oi.base_cost))',
+            'discount_total' => 'SUM(oi.base_discount_amount)',
+            'tax_total'      => 'SUM(o.base_tax_amount)',
+            'shipping_total' => 'SUM(o.base_shipping_amount)',
         ];
 
         $dimensionExprs = $this->dimensionExprs($r, $args['dimension']);
@@ -100,7 +103,9 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         // Item-level metrics aggregate order_item rows; order-level metrics work off the
         // order header. Joining order_item when only order-level metrics are requested
         // multiplies each order by its line-item count and inflates the totals.
-        $itemLevelMetrics    = ['qty_sold', 'revenue', 'margin'];
+        // discount_total is item-level (per-line discount); tax_total/shipping_total
+        // are order-header columns (handled per-dimension below).
+        $itemLevelMetrics    = ['qty_sold', 'revenue', 'margin', 'discount_total'];
         $itemLevelDimensions = ['product', 'sku', 'category', 'brand'];
         $extras              = $args['display_metrics'] ?? [];
 
@@ -117,6 +122,10 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             $itemNet = 'SUM(oi.base_row_total - oi.base_discount_amount - oi.base_amount_refunded)';
             $valueExprs['net_revenue'] = $itemNet;
             $valueExprs['aov']         = $itemNet . ' / NULLIF(COUNT(DISTINCT o.entity_id), 0)';
+            // tax is also per-line, so attribute the line tax; shipping has no
+            // per-line column and can't be attributed to an item dimension (the
+            // prompt steers shipping_total to order-level dimensions only).
+            $valueExprs['tax_total'] = 'SUM(oi.base_tax_amount)';
         }
 
         $needsItemTable =
@@ -203,6 +212,46 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                 'label'    => 'o.status',
                 'link_id'  => new Maho\Db\Expr('NULL'),
                 'group_by' => 'o.status',
+            ],
+            'payment_method' => [
+                'label'    => new Maho\Db\Expr("COALESCE(NULLIF(sop.method, ''), 'unknown')"),
+                'link_id'  => new Maho\Db\Expr('NULL'),
+                'group_by' => 'sop.method',
+                'joins'    => [[
+                    'type' => 'inner',
+                    'name' => ['sop' => $r->getTableName('sales/order_payment')],
+                    'cond' => 'sop.parent_id = o.entity_id',
+                ]],
+            ],
+            'shipping_method' => [
+                'label'    => new Maho\Db\Expr("COALESCE(NULLIF(o.shipping_method, ''), '(none)')"),
+                'link_id'  => new Maho\Db\Expr('NULL'),
+                'group_by' => 'o.shipping_method',
+            ],
+            'region' => [
+                'label'    => new Maho\Db\Expr("COALESCE(NULLIF(soa.region, ''), '(unknown)')"),
+                'link_id'  => new Maho\Db\Expr('NULL'),
+                'group_by' => 'soa.region',
+                'joins'    => [[
+                    'type' => 'inner',
+                    'name' => ['soa' => $r->getTableName('sales/order_address')],
+                    'cond' => "soa.parent_id = o.entity_id AND soa.address_type = 'shipping'",
+                ]],
+            ],
+            'country' => [
+                'label'    => new Maho\Db\Expr("COALESCE(NULLIF(soa.country_id, ''), '(unknown)')"),
+                'link_id'  => new Maho\Db\Expr('NULL'),
+                'group_by' => 'soa.country_id',
+                'joins'    => [[
+                    'type' => 'inner',
+                    'name' => ['soa' => $r->getTableName('sales/order_address')],
+                    'cond' => "soa.parent_id = o.entity_id AND soa.address_type = 'shipping'",
+                ]],
+            ],
+            'coupon_code' => [
+                'label'    => new Maho\Db\Expr("COALESCE(NULLIF(o.coupon_code, ''), '(no coupon)')"),
+                'link_id'  => new Maho\Db\Expr('NULL'),
+                'group_by' => 'o.coupon_code',
             ],
             default => throw new InvalidArgumentException("Unsupported dimension: {$dimension}"),
         };
@@ -362,9 +411,18 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             return null;
         }
 
-        $linkId = isset($rowKey['link_id']) ? (int) $rowKey['link_id'] : null;
+        // Order-level string dimensions have no numeric id; drill by the row's
+        // displayed label value instead.
+        $stringKeyedDimensions = ['payment_method', 'shipping_method', 'region', 'country', 'coupon_code'];
+        $linkId   = isset($rowKey['link_id']) ? (int) $rowKey['link_id'] : null;
+        $labelKey = null;
 
-        if ($linkId === null && $dimension !== 'customer') {
+        if (in_array($dimension, $stringKeyedDimensions, true)) {
+            $labelKey = isset($rowKey['label']) ? (string) $rowKey['label'] : null;
+            if ($labelKey === null) {
+                return null;
+            }
+        } elseif ($linkId === null && $dimension !== 'customer') {
             return null;
         }
 
@@ -372,7 +430,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         $r      = Mage::getSingleton('core/resource');
         $period = Mage::helper('aireports')->newPeriodNormalizer()->resolve($args['period']);
 
-        return $this->buildDrillRows($conn, $r, $dimension, $linkId, $scopeStoreIds, $period);
+        return $this->buildDrillRows($conn, $r, $dimension, $linkId, $scopeStoreIds, $period, $labelKey);
     }
 
     /**
@@ -387,6 +445,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         ?int $linkId,
         array $scopeStoreIds,
         array $period,
+        ?string $labelKey = null,
     ): array {
         $orderItem = $r->getTableName('sales/order_item');
         $order     = $r->getTableName('sales/order');
@@ -413,10 +472,12 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             $select->where('o.store_id IN (?)', $scopeStoreIds);
         }
 
-        // For dimensions where the drill returns all items in matching orders (store, customer),
-        // hide the simple-child rows of configurable/bundle parents so we don't double-list each
-        // line. For product/sku drills the explicit product_id filter already picks one side.
-        $hideChildren = in_array($dimension, ['store', 'customer'], true);
+        // For dimensions where the drill returns all items in matching orders (store, customer,
+        // and the order-level string dimensions), hide the simple-child rows of configurable/bundle
+        // parents so we don't double-list each line. For product/sku drills the explicit product_id
+        // filter already picks one side.
+        $orderLevelStringDims = ['payment_method', 'shipping_method', 'region', 'country', 'coupon_code'];
+        $hideChildren = in_array($dimension, array_merge(['store', 'customer'], $orderLevelStringDims), true);
 
         switch ($dimension) {
             case 'product':
@@ -485,6 +546,23 @@ class MageAustralia_AiReports_Model_Primitive_TopN
                     ->where('o.store_id = ?', $linkId);
                 break;
 
+            case 'payment_method':
+            case 'shipping_method':
+            case 'region':
+            case 'country':
+            case 'coupon_code':
+                $select->columns([
+                    'order_id'           => 'o.entity_id',
+                    'order_increment_id' => 'o.increment_id',
+                    'customer_email'     => 'o.customer_email',
+                    'sku'                => 'oi.sku',
+                    'qty_ordered'        => 'oi.qty_ordered',
+                    'row_total'          => new Maho\Db\Expr('oi.row_total - oi.discount_amount'),
+                    'created_at'         => $createdAtLocal,
+                ]);
+                $this->applyStringDimensionFilter($select, $r, $dimension, (string) $labelKey);
+                break;
+
             default:
                 return [];
         }
@@ -513,6 +591,49 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             }
             return $row;
         }, $raw);
+    }
+
+    /**
+     * Apply the WHERE (and any join) that restricts a drill query to one value of
+     * an order-level string dimension. The placeholder labels emitted by
+     * dimensionExprs (e.g. "(no coupon)") map back to empty/null.
+     */
+    private function applyStringDimensionFilter(
+        Maho\Db\Select $select,
+        Mage_Core_Model_Resource $r,
+        string $dimension,
+        string $labelKey,
+    ): void {
+        switch ($dimension) {
+            case 'payment_method':
+                $select->joinInner(['sop' => $r->getTableName('sales/order_payment')], 'sop.parent_id = o.entity_id', []);
+                $labelKey === 'unknown'
+                    ? $select->where("sop.method IS NULL OR sop.method = ''")
+                    : $select->where('sop.method = ?', $labelKey);
+                break;
+            case 'shipping_method':
+                $labelKey === '(none)'
+                    ? $select->where("o.shipping_method IS NULL OR o.shipping_method = ''")
+                    : $select->where('o.shipping_method = ?', $labelKey);
+                break;
+            case 'region':
+                $select->joinInner(['soa' => $r->getTableName('sales/order_address')], "soa.parent_id = o.entity_id AND soa.address_type = 'shipping'", []);
+                $labelKey === '(unknown)'
+                    ? $select->where("soa.region IS NULL OR soa.region = ''")
+                    : $select->where('soa.region = ?', $labelKey);
+                break;
+            case 'country':
+                $select->joinInner(['soa' => $r->getTableName('sales/order_address')], "soa.parent_id = o.entity_id AND soa.address_type = 'shipping'", []);
+                $labelKey === '(unknown)'
+                    ? $select->where("soa.country_id IS NULL OR soa.country_id = ''")
+                    : $select->where('soa.country_id = ?', $labelKey);
+                break;
+            case 'coupon_code':
+                $labelKey === '(no coupon)'
+                    ? $select->where("o.coupon_code IS NULL OR o.coupon_code = ''")
+                    : $select->where('o.coupon_code = ?', $labelKey);
+                break;
+        }
     }
 
     private function castNumeric(mixed $raw): int|float

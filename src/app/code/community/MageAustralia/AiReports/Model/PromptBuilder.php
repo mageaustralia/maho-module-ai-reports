@@ -84,6 +84,13 @@ Metric guidance (revenue vs net_revenue):
 - For breakdowns by an ITEM-LEVEL dimension (`product`, `sku`, `category`, `brand`), use `revenue` for generic "revenue"/"sales" - e.g. "revenue by brand", "sales by category", "top products by revenue" all use metric=`revenue`. This is the line-item subtotal (`row_total - discount_amount`). Tax and shipping live on the order header and cannot be attributed to a single brand/category/product, so net_revenue is not meaningful per item; use `revenue`.
 - Also use `revenue` whenever the user explicitly asks for "product revenue", "subtotal", "pre-tax revenue", or "line-item revenue".
 - `qty_sold`, `order_count`, `aov`, `margin` - use as-is when the question implies them.
+- `discount_total` (total discounts given), `tax_total` (tax collected), `shipping_total` (shipping charged) - use when the user asks about discounts/coupons, tax, or shipping revenue. `discount_total` and `tax_total` work with any dimension. `shipping_total` is an order-header amount and is only meaningful at the BUSINESS/STORE level or by an order-level dimension (store, payment_method, shipping_method, region, country, coupon_code) - do NOT break shipping down by product/sku/category/brand.
+
+Dimension guidance (operational / order-level dimensions):
+- `payment_method` - "revenue by payment method", "how many orders used Afterpay". `shipping_method` - "orders by shipping method".
+- `region` (state/province) and `country` - geography from the shipping address. "sales by state", "revenue by country", "where are my customers" (use region for state-level, country for country-level).
+- `coupon_code` - "top coupon codes", "revenue from discounted vs full-price orders" (rows with no coupon are grouped as "(no coupon)").
+- These are all order-level: prefer `net_revenue`/`order_count` for money/volume on them, or `discount_total`/`tax_total`/`shipping_total` where the question is about those amounts.
 PROMPT;
     }
 }
