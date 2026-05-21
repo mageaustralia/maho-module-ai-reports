@@ -49,6 +49,7 @@ final class PromptBuilderTest extends TestCase
             public function getArgsSchema(): array { return ['type' => 'object']; }
             public function execute(array $a, array $s): array { return []; }
             public function getDefaultRender(): array { return ['primary' => 'table']; }
+            public function supportsDrilldown(): bool { return false; }
             public function drill(array $a, array $s, array $k): ?array { return null; }
         };
     }
