@@ -104,6 +104,21 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         $itemLevelDimensions = ['product', 'sku', 'category', 'brand'];
         $extras              = $args['display_metrics'] ?? [];
 
+        // When grouping by an item-level dimension, the order_item join repeats each
+        // order's header columns once per line, so order-level money columns
+        // (base_total_invoiced, grand_total) get counted N times — a "revenue by
+        // brand" would sum to a multiple of the real period total. Use per-line
+        // base columns instead so the metric decomposes correctly across the
+        // dimension. net_revenue becomes the line-item net (sales - discount -
+        // refunds); shipping/tax live only on the order header and can't be
+        // attributed to a brand/category, so they're excluded by design.
+        // order_count stays COUNT(DISTINCT) which is unaffected by the fan-out.
+        if (in_array($args['dimension'], $itemLevelDimensions, true)) {
+            $itemNet = 'SUM(oi.base_row_total - oi.base_discount_amount - oi.base_amount_refunded)';
+            $valueExprs['net_revenue'] = $itemNet;
+            $valueExprs['aov']         = $itemNet . ' / NULLIF(COUNT(DISTINCT o.entity_id), 0)';
+        }
+
         $needsItemTable =
             in_array($args['metric'], $itemLevelMetrics, true)
             || !empty(array_intersect($extras, $itemLevelMetrics))

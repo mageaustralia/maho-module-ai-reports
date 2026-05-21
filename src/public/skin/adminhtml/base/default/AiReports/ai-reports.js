@@ -60,8 +60,12 @@ var AiReportsUtil = (function () {
         target.innerHTML = '';
         var head = document.createElement('div');
         head.className = 'aireports-result__head';
-        head.innerHTML = '<h4>' + escapeHtml(env.title) + '</h4>' +
-                         '<p class="aireports-result__narrative">' + escapeHtml(env.narrative) + '</p>';
+        var headHtml = '<h4>' + escapeHtml(env.title) + '</h4>';
+        if (env.meta && env.meta.period && env.meta.period.label) {
+            headHtml += '<p class="aireports-result__period">Period: ' + escapeHtml(env.meta.period.label) + '</p>';
+        }
+        headHtml += '<p class="aireports-result__narrative">' + escapeHtml(env.narrative) + '</p>';
+        head.innerHTML = headHtml;
         target.appendChild(head);
 
         if (env.meta && env.meta.scope_warning) {
@@ -272,6 +276,26 @@ var AiReportsUtil = (function () {
             }
         });
         t.appendChild(tbody);
+
+        // Totals footer (breakdown / top_n only — block.totals is set server-side).
+        if (block.totals) {
+            var tfoot = document.createElement('tfoot');
+            var ftr = document.createElement('tr');
+            ftr.className = 'aireports-table__totals';
+            if (canDrill) ftr.appendChild(document.createElement('td'));
+            block.columns.forEach(function (col, idx) {
+                var td = document.createElement('td');
+                if (idx === 0) {
+                    td.textContent = 'Total';
+                } else if (Object.prototype.hasOwnProperty.call(block.totals, col.key)) {
+                    td.textContent = formatValue(block.totals[col.key], col.format);
+                }
+                ftr.appendChild(td);
+            });
+            tfoot.appendChild(ftr);
+            t.appendChild(tfoot);
+        }
+
         el.appendChild(t);
         return el;
     }

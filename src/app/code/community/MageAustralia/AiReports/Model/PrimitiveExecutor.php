@@ -49,7 +49,37 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
             executedAt: new \DateTimeImmutable('now'),
             rowCount: count($rows),
             supportsDrilldown: $primitive->supportsDrilldown(),
+            period: $this->resolvePeriodMeta($plan['args']['period'] ?? null),
         );
+    }
+
+    /**
+     * Resolve the report's period to a from/to range plus a human label in the
+     * store timezone, for display in the report header. Returns null if no period
+     * or if resolution isn't possible (e.g. outside a booted Mage context in tests).
+     *
+     * @param array<string, mixed>|null $periodSpec
+     * @return array{from: string, to: string, label: string}|null
+     */
+    private function resolvePeriodMeta(?array $periodSpec): ?array
+    {
+        if ($periodSpec === null) {
+            return null;
+        }
+        try {
+            $helper   = Mage::helper('aireports');
+            $resolved = $helper->newPeriodNormalizer()->resolve($periodSpec);
+            $tz       = new \DateTimeZone($helper->getStoreTimezone());
+            $from     = (new \DateTimeImmutable($resolved['from'], new \DateTimeZone('UTC')))->setTimezone($tz);
+            $to       = (new \DateTimeImmutable($resolved['to'], new \DateTimeZone('UTC')))->setTimezone($tz);
+            $label    = $from->format('j M Y');
+            if ($from->format('Y-m-d') !== $to->format('Y-m-d')) {
+                $label .= ' – ' . $to->format('j M Y');
+            }
+            return ['from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d'), 'label' => $label];
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -185,7 +215,28 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
             if (isset($r['link_id'])) $entry['link_id'] = $r['link_id'];
             $tableRows[] = $entry;
         }
-        return ['type' => 'table', 'columns' => $columns, 'rows' => $tableRows];
+        $block = ['type' => 'table', 'columns' => $columns, 'rows' => $tableRows];
+
+        // For dimension breakdowns, a column total is meaningful (sum of revenue,
+        // qty, etc. across the rows). Skip it for primitives where summing columns
+        // is nonsensical (growth comparisons, time series, stock cover ratios).
+        if (in_array($primitive, ['top_n', 'breakdown'], true)) {
+            $totals = [];
+            foreach ($columns as $col) {
+                if ($col['format'] !== 'number' || $col['key'] === 'share_pct') {
+                    continue;
+                }
+                $totals[$col['key']] = array_sum(array_map(
+                    static fn (array $r): float => (float) ($r['cells'][$col['key']] ?? 0),
+                    $tableRows,
+                ));
+            }
+            if ($totals !== []) {
+                $block['totals'] = $totals;
+            }
+        }
+
+        return $block;
     }
 
     /** @param array<string, mixed> $sample @return array<int, array{key:string,label:string,format:string}> */

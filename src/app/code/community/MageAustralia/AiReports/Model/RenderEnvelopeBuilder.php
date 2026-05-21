@@ -14,6 +14,7 @@ class MageAustralia_AiReports_Model_RenderEnvelopeBuilder
     /**
      * @param array<int, array<string, mixed>> $blocks
      * @param int[]                            $scopeStoreIds
+     * @param array{from: string, to: string, label: string}|null $period
      * @return array<string, mixed>
      */
     public function build(
@@ -26,6 +27,7 @@ class MageAustralia_AiReports_Model_RenderEnvelopeBuilder
         \DateTimeImmutable $executedAt,
         int $rowCount,
         bool $supportsDrilldown = true,
+        ?array $period = null,
     ): array {
         return [
             'title'     => $title,
@@ -40,6 +42,7 @@ class MageAustralia_AiReports_Model_RenderEnvelopeBuilder
                     ? 'Some requested stores were filtered out by your access scope.'
                     : null,
                 'supports_drilldown' => $supportsDrilldown,
+                'period'             => $period,
             ],
         ];
     }
