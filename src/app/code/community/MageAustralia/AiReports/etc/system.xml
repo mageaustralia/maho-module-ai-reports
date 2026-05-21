@@ -9,6 +9,25 @@
             <show_in_website>0</show_in_website>
             <show_in_store>0</show_in_store>
             <groups>
+                <general translate="label">
+                    <label>General</label>
+                    <sort_order>5</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <brand_attribute translate="label comment">
+                            <label>Brand Attribute</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>aireports/system_config_source_productAttribute</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Product attribute used for the "Sales by Brand" report. Leave on "Auto-detect" to use the first populated of: brand_id, brand, manufacturer.</comment>
+                        </brand_attribute>
+                    </fields>
+                </general>
                 <email translate="label">
                     <label>Scheduled Email</label>
                     <sort_order>10</sort_order>

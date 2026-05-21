@@ -29,7 +29,7 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
             'additionalProperties' => false,
             'properties'           => [
                 'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count']],
-                'dimension' => ['type' => 'string', 'enum' => ['product', 'store', 'order_status']],
+                'dimension' => ['type' => 'string', 'enum' => ['product', 'category', 'brand', 'store', 'order_status']],
                 'period'    => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'store_ids'   => ['type' => ['array', 'null'], 'items' => ['type' => 'integer']],
                 'product_ids' => [
@@ -94,9 +94,10 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
             $total += (float) $row['value'];
         }
         $linkRoute = match ($dimension) {
-            'product', 'category', 'brand' => 'adminhtml/catalog_product/edit',
-            'store'                         => 'adminhtml/system_store/editStore',
-            default                          => null,
+            'product'  => 'adminhtml/catalog_product/edit',
+            'category' => 'adminhtml/catalog_category/edit',
+            'store'    => 'adminhtml/system_store/editStore',
+            default    => null,
         };
         $linkParam = $dimension === 'store' ? 'store_id' : 'id';
         $shaped = [];

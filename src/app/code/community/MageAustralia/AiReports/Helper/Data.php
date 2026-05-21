@@ -89,4 +89,64 @@ class MageAustralia_AiReports_Helper_Data extends Mage_Core_Helper_Abstract
         $today = $today ?? new \DateTimeImmutable('now', new \DateTimeZone($tz));
         return new MageAustralia_AiReports_Model_PeriodNormalizer($today, $tz);
     }
+
+    /** @var array{id:int,code:string,backend_type:string,frontend_input:string}|false|null */
+    private array|false|null $brandAttribute = null;
+
+    /**
+     * Resolve the product attribute that holds "brand" for the Sales-by-Brand
+     * breakdown. Uses the admin setting if configured, otherwise auto-detects by
+     * trying common codes and picking the first that exists AND is populated.
+     *
+     * @return array{id:int,code:string,backend_type:string,frontend_input:string}|null
+     */
+    public function getBrandAttribute(): ?array
+    {
+        if ($this->brandAttribute !== null) {
+            return $this->brandAttribute ?: null;
+        }
+
+        $configured = trim((string) Mage::getStoreConfig('aireports/general/brand_attribute'));
+        $candidates = $configured !== '' ? [$configured] : ['brand_id', 'brand', 'manufacturer'];
+
+        foreach ($candidates as $code) {
+            /** @var Mage_Eav_Model_Entity_Attribute_Abstract $attr */
+            $attr = Mage::getSingleton('eav/config')->getAttribute('catalog_product', $code);
+            if (!$attr || !$attr->getId()) {
+                continue;
+            }
+            // For auto-detect, require the attribute to actually hold values so we
+            // don't pick an empty placeholder (e.g. unused "manufacturer").
+            if ($configured === '' && !$this->attributeHasValues($attr)) {
+                continue;
+            }
+            $this->brandAttribute = [
+                'id'             => (int) $attr->getId(),
+                'code'           => (string) $attr->getAttributeCode(),
+                'backend_type'   => (string) $attr->getBackendType(),
+                'frontend_input' => (string) $attr->getFrontendInput(),
+            ];
+            return $this->brandAttribute;
+        }
+
+        $this->brandAttribute = false;
+        return null;
+    }
+
+    private function attributeHasValues(Mage_Eav_Model_Entity_Attribute_Abstract $attr): bool
+    {
+        $resource = Mage::getSingleton('core/resource');
+        $table = $resource->getTableName('catalog/product') . '_' . $attr->getBackendType();
+        $conn = $resource->getConnection('core_read');
+        if (!$conn->isTableExists($table)) {
+            return false;
+        }
+        $select = $conn->select()
+            ->from($table, [new Maho\Db\Expr('1')])
+            ->where('attribute_id = ?', (int) $attr->getId())
+            ->where('value IS NOT NULL')
+            ->where('value <> ?', '')
+            ->limit(1);
+        return (bool) $conn->fetchOne($select);
+    }
 }

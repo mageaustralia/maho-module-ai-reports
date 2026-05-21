@@ -32,7 +32,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             'additionalProperties' => false,
             'properties'           => [
                 'metric'    => ['type' => 'string', 'enum' => ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin']],
-                'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'customer', 'store', 'order_status']],
+                'dimension' => ['type' => 'string', 'enum' => ['product', 'sku', 'category', 'brand', 'customer', 'store', 'order_status']],
                 'period'    => MageAustralia_AiReports_Model_PeriodNormalizer::schema(),
                 'limit'     => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
                 'store_ids'   => [
@@ -122,6 +122,15 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             $select->joinLeft(['cs' => $r->getTableName('core/store')], 'cs.store_id = o.store_id', []);
         }
 
+        // Dimensions like category/brand need extra joins (declared by dimensionExprs).
+        foreach ($dimensionExprs['joins'] ?? [] as $join) {
+            if (($join['type'] ?? 'inner') === 'left') {
+                $select->joinLeft($join['name'], $join['cond'], []);
+            } else {
+                $select->joinInner($join['name'], $join['cond'], []);
+            }
+        }
+
         $columns = [
             'label'   => $dimensionExprs['label'],
             'link_id' => $dimensionExprs['link_id'],
@@ -154,7 +163,7 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         return $select;
     }
 
-    /** @return array{label: string|Maho\Db\Expr, link_id: string|Maho\Db\Expr, group_by: string|array<int,string>} */
+    /** @return array{label: string|Maho\Db\Expr, link_id: string|Maho\Db\Expr, group_by: string|array<int,string>, joins?: array<int, array{type: string, name: array<string, string>, cond: string}>} */
     private function dimensionExprs(Mage_Core_Model_Resource $r, string $dimension): array
     {
         return match ($dimension) {
@@ -184,27 +193,94 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         };
     }
 
-    // TODO(v1.1): implement real category join through catalog_category_product to get category_name.
+    /**
+     * Sales by category. A product can belong to multiple categories, so each
+     * order line is counted under every (non-root) category it sits in — shares
+     * can sum to >100%, which matches how merchants read "how much did X sell".
+     * Root (level 0) and store-root (level 1) categories are excluded.
+     */
     private function categoryExprs(Mage_Core_Model_Resource $r): array
     {
-        // Resolved at staging - join through catalog_category_product to get category_name.
-        // Stub returns product-keyed grouping for now; replace during integration.
+        $nameAttrId = (int) Mage::getSingleton('eav/config')
+            ->getAttribute('catalog_category', 'name')->getId();
+        $varcharTable = $r->getTableName('catalog/category') . '_varchar';
+
         return [
-            'label'    => 'oi.name',
-            'link_id'  => 'oi.product_id',
-            'group_by' => ['oi.product_id', 'oi.name'],
+            'label'    => new Maho\Db\Expr("COALESCE(ccev.value, CONCAT('Category ', ccp.category_id))"),
+            'link_id'  => 'ccp.category_id',
+            'group_by' => ['ccp.category_id', 'ccev.value'],
+            'joins'    => [
+                [
+                    'type' => 'inner',
+                    'name' => ['ccp' => $r->getTableName('catalog/category_product')],
+                    'cond' => 'ccp.product_id = oi.product_id',
+                ],
+                [
+                    'type' => 'inner',
+                    'name' => ['cce' => $r->getTableName('catalog/category')],
+                    'cond' => 'cce.entity_id = ccp.category_id AND cce.level > 1',
+                ],
+                [
+                    'type' => 'left',
+                    'name' => ['ccev' => $varcharTable],
+                    'cond' => "ccev.entity_id = ccp.category_id AND ccev.store_id = 0 AND ccev.attribute_id = {$nameAttrId}",
+                ],
+            ],
         ];
     }
 
-    // TODO(v1.1): implement real brand join once brand attribute code is confirmed.
+    /**
+     * Sales by brand. Brand attribute is admin-configurable with auto-detection
+     * (brand_id / brand / manufacturer). Select-type attributes resolve the label
+     * via eav_attribute_option_value; text attributes use the stored value.
+     */
     private function brandExprs(Mage_Core_Model_Resource $r): array
     {
-        // Same caveat as category - placeholder uses product. Replace during integration once
-        // the brand attribute code is confirmed.
+        $attr = Mage::helper('aireports')->getBrandAttribute();
+        if ($attr === null) {
+            throw new InvalidArgumentException(
+                'Sales by brand is unavailable: no brand attribute is configured or detected. '
+                . 'Set one under System > Configuration > Maho AI: Reports.',
+            );
+        }
+
+        $attrId     = (int) $attr['id'];
+        $valueTable = $r->getTableName('catalog/product') . '_' . $attr['backend_type'];
+        $isOption   = $attr['backend_type'] === 'int'
+            && in_array($attr['frontend_input'], ['select', 'multiselect'], true);
+
+        if ($isOption) {
+            return [
+                'label'    => new Maho\Db\Expr("COALESCE(NULLIF(eaov.value, ''), CONCAT('Brand ', cpb.value))"),
+                'link_id'  => 'cpb.value',
+                'group_by' => ['cpb.value', 'eaov.value'],
+                'joins'    => [
+                    [
+                        'type' => 'inner',
+                        'name' => ['cpb' => $valueTable],
+                        'cond' => "cpb.entity_id = oi.product_id AND cpb.store_id = 0 AND cpb.attribute_id = {$attrId}",
+                    ],
+                    [
+                        'type' => 'left',
+                        'name' => ['eaov' => $r->getTableName('eav/attribute_option_value')],
+                        'cond' => 'eaov.option_id = cpb.value AND eaov.store_id = 0',
+                    ],
+                ],
+            ];
+        }
+
+        // Text/varchar brand attribute — value is the brand name itself.
         return [
-            'label'    => 'oi.name',
-            'link_id'  => 'oi.product_id',
-            'group_by' => ['oi.product_id', 'oi.name'],
+            'label'    => new Maho\Db\Expr("COALESCE(NULLIF(cpb.value, ''), 'Unknown')"),
+            'link_id'  => new Maho\Db\Expr('NULL'),
+            'group_by' => ['cpb.value'],
+            'joins'    => [
+                [
+                    'type' => 'inner',
+                    'name' => ['cpb' => $valueTable],
+                    'cond' => "cpb.entity_id = oi.product_id AND cpb.store_id = 0 AND cpb.attribute_id = {$attrId}",
+                ],
+            ],
         ];
     }
 
@@ -215,11 +291,14 @@ class MageAustralia_AiReports_Model_Primitive_TopN
     public function shapeRows(array $rawRows, string $dimension): array
     {
         $shaped = [];
+        // brand + order_status have no single edit page (link_id is still kept
+        // for drilldown, but no link_url is emitted).
         $linkRoute = match ($dimension) {
-            'product', 'sku', 'category', 'brand' => 'adminhtml/catalog_product/edit',
-            'customer'                             => 'adminhtml/customer/edit',
-            'store'                                => 'adminhtml/system_store/editStore',
-            default                                => null,
+            'product', 'sku' => 'adminhtml/catalog_product/edit',
+            'category'       => 'adminhtml/catalog_category/edit',
+            'customer'       => 'adminhtml/customer/edit',
+            'store'          => 'adminhtml/system_store/editStore',
+            default          => null,
         };
         $linkParam  = $dimension === 'store' ? 'store_id' : 'id';
         $metricKeys = ['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin'];
@@ -329,16 +408,36 @@ class MageAustralia_AiReports_Model_Primitive_TopN
             case 'sku':
             case 'category':
             case 'brand':
-                $select
-                    ->columns([
-                        'order_id'           => 'o.entity_id',
-                        'order_increment_id' => 'o.increment_id',
-                        'customer_email'     => 'o.customer_email',
-                        'qty_ordered'        => 'oi.qty_ordered',
-                        'row_total'          => new Maho\Db\Expr('oi.row_total - oi.discount_amount'),
-                        'created_at'         => $createdAtLocal,
-                    ])
-                    ->where('oi.product_id = ?', $linkId);
+                $select->columns([
+                    'order_id'           => 'o.entity_id',
+                    'order_increment_id' => 'o.increment_id',
+                    'customer_email'     => 'o.customer_email',
+                    'qty_ordered'        => 'oi.qty_ordered',
+                    'row_total'          => new Maho\Db\Expr('oi.row_total - oi.discount_amount'),
+                    'created_at'         => $createdAtLocal,
+                ]);
+                if ($dimension === 'category') {
+                    // link_id is a category_id — match items whose product is in it.
+                    $productsInCategory = $conn->select()
+                        ->from($r->getTableName('catalog/category_product'), ['product_id'])
+                        ->where('category_id = ?', $linkId);
+                    $select->where('oi.product_id IN (?)', $productsInCategory);
+                } elseif ($dimension === 'brand') {
+                    // link_id is a brand option_id — match items whose product carries it.
+                    $brand = Mage::helper('aireports')->getBrandAttribute();
+                    if ($brand === null) {
+                        return [];
+                    }
+                    $valueTable = $r->getTableName('catalog/product') . '_' . $brand['backend_type'];
+                    $productsWithBrand = $conn->select()
+                        ->from($valueTable, ['entity_id'])
+                        ->where('attribute_id = ?', (int) $brand['id'])
+                        ->where('store_id = ?', 0)
+                        ->where('value = ?', $linkId);
+                    $select->where('oi.product_id IN (?)', $productsWithBrand);
+                } else {
+                    $select->where('oi.product_id = ?', $linkId);
+                }
                 break;
 
             case 'customer':

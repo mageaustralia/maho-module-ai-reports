@@ -26,7 +26,7 @@ final class TopNTest extends TestCase
         $this->assertContains('limit', $schema['required']);
         $this->assertSame(['qty_sold', 'revenue', 'net_revenue', 'order_count', 'aov', 'margin'],
             $schema['properties']['metric']['enum']);
-        $this->assertSame(['product', 'sku', 'customer', 'store', 'order_status'],
+        $this->assertSame(['product', 'sku', 'category', 'brand', 'customer', 'store', 'order_status'],
             $schema['properties']['dimension']['enum']);
         $this->assertSame(1, $schema['properties']['limit']['minimum']);
         $this->assertSame(200, $schema['properties']['limit']['maximum']);
