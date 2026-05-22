@@ -23,8 +23,12 @@ foreach ([
     'last_scheduled_error'  => ['type' => Maho\Db\Ddl\Table::TYPE_VARCHAR, 'length' => 1024, 'nullable' => true,  'comment' => 'Error message from the last cron run, if any'],
 ] as $col => $spec) {
     $params = ['nullable' => $spec['nullable']];
-    if (isset($spec['length']))  $params['length']  = $spec['length'];
-    if (isset($spec['default'])) $params['default'] = $spec['default'];
+    if (isset($spec['length'])) {
+        $params['length']  = $spec['length'];
+    }
+    if (isset($spec['default'])) {
+        $params['default'] = $spec['default'];
+    }
     $params['comment'] = $spec['comment'];
     if (!$conn->tableColumnExists($table, $col)) {
         $conn->addColumn($table, $col, ['type' => $spec['type']] + $params);
@@ -35,13 +39,13 @@ foreach ([
 $logTable = $this->getTable('aireports/runLog');
 if (!$conn->isTableExists($logTable)) {
     $tableObj = $conn->newTable($logTable)
-        ->addColumn('log_id',       Maho\Db\Ddl\Table::TYPE_INTEGER, null,  ['identity' => true, 'unsigned' => true, 'nullable' => false, 'primary' => true])
-        ->addColumn('report_id',    Maho\Db\Ddl\Table::TYPE_INTEGER, null,  ['unsigned' => true, 'nullable' => false])
-        ->addColumn('triggered_by', Maho\Db\Ddl\Table::TYPE_VARCHAR, 16,   ['nullable' => false])  // 'cron' | 'manual'
-        ->addColumn('started_at',   Maho\Db\Ddl\Table::TYPE_DATETIME, null, ['nullable' => false])
-        ->addColumn('elapsed_ms',   Maho\Db\Ddl\Table::TYPE_INTEGER, null,  ['unsigned' => true, 'nullable' => true])
-        ->addColumn('row_count',    Maho\Db\Ddl\Table::TYPE_INTEGER, null,  ['unsigned' => true, 'nullable' => true])
-        ->addColumn('status',       Maho\Db\Ddl\Table::TYPE_VARCHAR, 16,   ['nullable' => false])  // 'success' | 'error'
+        ->addColumn('log_id', Maho\Db\Ddl\Table::TYPE_INTEGER, null, ['identity' => true, 'unsigned' => true, 'nullable' => false, 'primary' => true])
+        ->addColumn('report_id', Maho\Db\Ddl\Table::TYPE_INTEGER, null, ['unsigned' => true, 'nullable' => false])
+        ->addColumn('triggered_by', Maho\Db\Ddl\Table::TYPE_VARCHAR, 16, ['nullable' => false])  // 'cron' | 'manual'
+        ->addColumn('started_at', Maho\Db\Ddl\Table::TYPE_DATETIME, null, ['nullable' => false])
+        ->addColumn('elapsed_ms', Maho\Db\Ddl\Table::TYPE_INTEGER, null, ['unsigned' => true, 'nullable' => true])
+        ->addColumn('row_count', Maho\Db\Ddl\Table::TYPE_INTEGER, null, ['unsigned' => true, 'nullable' => true])
+        ->addColumn('status', Maho\Db\Ddl\Table::TYPE_VARCHAR, 16, ['nullable' => false])  // 'success' | 'error'
         ->addColumn('error_message', Maho\Db\Ddl\Table::TYPE_VARCHAR, 1024, ['nullable' => true])
         ->addColumn('email_sent_to', Maho\Db\Ddl\Table::TYPE_VARCHAR, 1024, ['nullable' => true])  // populated for cron runs
         ->addIndex($this->getIdxName($logTable, ['report_id']), ['report_id'])

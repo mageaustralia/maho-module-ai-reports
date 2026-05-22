@@ -9,12 +9,14 @@
 
 declare(strict_types=1);
 
-class MageAustralia_AiReports_Model_Primitive_Growth
-    implements MageAustralia_AiReports_Model_PrimitiveInterface
+class MageAustralia_AiReports_Model_Primitive_Growth implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
     use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
     #[\Override]
-    public function getName(): string { return 'growth'; }
+    public function getName(): string
+    {
+        return 'growth';
+    }
 
     #[\Override]
     public function getDescription(): string

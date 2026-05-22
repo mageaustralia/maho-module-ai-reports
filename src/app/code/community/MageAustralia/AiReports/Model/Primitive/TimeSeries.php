@@ -9,11 +9,15 @@
 
 declare(strict_types=1);
 
-class MageAustralia_AiReports_Model_Primitive_TimeSeries
-    implements MageAustralia_AiReports_Model_PrimitiveInterface
+class MageAustralia_AiReports_Model_Primitive_TimeSeries implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
-    public function getName(): string { return 'time_series'; }
+    #[\Override]
+    public function getName(): string
+    {
+        return 'time_series';
+    }
 
+    #[\Override]
     public function getDescription(): string
     {
         return 'Returns a time-series of a metric over a period at day/week/month granularity. ' .
@@ -22,6 +26,7 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
                'Use for "daily revenue", "weekly orders", trends, period-over-period comparisons.';
     }
 
+    #[\Override]
     public function getArgsSchema(): array
     {
         return [
@@ -44,6 +49,7 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
         ];
     }
 
+    #[\Override]
     public function getDefaultRender(): array
     {
         return ['primary' => 'line_chart'];
@@ -52,16 +58,19 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
     /**
      * Drilldown is not applicable to time_series (single-value series, not record aggregations).
      */
+    #[\Override]
     public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
     {
         return null;
     }
 
+    #[\Override]
     public function supportsDrilldown(): bool
     {
         return false;
     }
 
+    #[\Override]
     public function execute(array $args, array $scopeStoreIds): array
     {
         $conn       = Mage::getSingleton('core/resource')->getConnection('core_read');
@@ -102,12 +111,14 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
         $tz     = new \DateTimeZone($helper->getStoreTimezone());
         $offset = (new \DateTime('now', $tz))->format('P'); // e.g. '+10:00'
 
+        /** @phpstan-ignore-next-line match.unhandled */
         $bucketExpr = match ($args['granularity']) {
             'day'   => "DATE(CONVERT_TZ(o.created_at, '+00:00', '$offset'))",
             'week'  => "DATE_SUB(DATE(CONVERT_TZ(o.created_at, '+00:00', '$offset')), INTERVAL WEEKDAY(CONVERT_TZ(o.created_at, '+00:00', '$offset')) DAY)",
             'month' => "DATE_FORMAT(CONVERT_TZ(o.created_at, '+00:00', '$offset'), '%Y-%m-01')",
         };
 
+        /** @phpstan-ignore-next-line match.unhandled */
         $valueExpr = match ($args['metric']) {
             'qty_sold'    => 'SUM(oi.qty_ordered)',
             'revenue'     => 'SUM(oi.row_total - oi.discount_amount)',
@@ -131,10 +142,10 @@ class MageAustralia_AiReports_Model_Primitive_TimeSeries
         }
 
         $select->columns([
-                'date'         => new Maho\Db\Expr($bucketExpr),
-                'series_label' => new Maho\Db\Expr($conn->quote($seriesLabel)),
-                'value'        => new Maho\Db\Expr($valueExpr),
-            ])
+            'date'         => new Maho\Db\Expr($bucketExpr),
+            'series_label' => new Maho\Db\Expr($conn->quote($seriesLabel)),
+            'value'        => new Maho\Db\Expr($valueExpr),
+        ])
             ->where('o.created_at >= ?', $period['from'])
             ->where('o.created_at <= ?', $period['to'])
             ->where('o.state NOT IN (?)', ['canceled', 'closed'])

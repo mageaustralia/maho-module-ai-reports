@@ -52,40 +52,66 @@ class MageAustralia_AiReports_Model_PeriodNormalizer
         $today = $this->today;
         switch ($key) {
             case 'today':
-                $f = $today; $t = $today; break;
+                $f = $today;
+                $t = $today;
+                break;
             case 'yesterday':
-                $f = $today->modify('-1 day'); $t = $f; break;
+                $f = $today->modify('-1 day');
+                $t = $f;
+                break;
             case 'this_week':
-                $f = $today->modify('monday this week'); $t = $today; break;
+                $f = $today->modify('monday this week');
+                $t = $today;
+                break;
             case 'last_complete_week':
-                $f = $today->modify('monday last week'); $t = $f->modify('+6 days'); break;
+                $f = $today->modify('monday last week');
+                $t = $f->modify('+6 days');
+                break;
             case 'this_month':
-                $f = $today->modify('first day of this month'); $t = $today; break;
+                $f = $today->modify('first day of this month');
+                $t = $today;
+                break;
             case 'last_complete_month':
                 $f = $today->modify('first day of last month');
                 $t = $today->modify('last day of last month');
                 break;
             case 'this_quarter':
-                $f = $this->quarterStart($today); $t = $today; break;
+                $f = $this->quarterStart($today);
+                $t = $today;
+                break;
             case 'last_complete_quarter':
                 $start = $this->quarterStart($today)->modify('-3 months');
-                $f = $start; $t = $start->modify('+3 months -1 day'); break;
+                $f = $start;
+                $t = $start->modify('+3 months -1 day');
+                break;
             case 'this_year':
-                $f = $today->modify('first day of January this year'); $t = $today; break;
+                $f = $today->modify('first day of January this year');
+                $t = $today;
+                break;
             case 'last_complete_year':
                 $f = $today->modify('first day of January last year');
                 $t = $today->modify('last day of December last year');
                 break;
             case 'last_7_days':
-                $f = $today->modify('-7 days'); $t = $today; break;
+                $f = $today->modify('-7 days');
+                $t = $today;
+                break;
             case 'last_30_days':
-                $f = $today->modify('-30 days'); $t = $today; break;
+                $f = $today->modify('-30 days');
+                $t = $today;
+                break;
             case 'last_90_days':
-                $f = $today->modify('-90 days'); $t = $today; break;
+                $f = $today->modify('-90 days');
+                $t = $today;
+                break;
             case 'last_180_days':
-                $f = $today->modify('-180 days'); $t = $today; break;
+                $f = $today->modify('-180 days');
+                $t = $today;
+                break;
             case 'last_365_days':
-                $f = $today->modify('-365 days'); $t = $today; break;
+                $f = $today->modify('-365 days');
+                $t = $today;
+                break;
             default:
                 throw new \InvalidArgumentException("Unknown relative period: $key");
         }

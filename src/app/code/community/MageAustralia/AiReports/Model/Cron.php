@@ -77,7 +77,8 @@ class MageAustralia_AiReports_Model_Cron
 
             // Use all available store IDs for cron runs (no session-based restriction).
             $stores = [];
-            foreach (Mage::app()->getStores(false) as $store) {
+            $storeCollection = Mage::getModel('core/store')->getCollection();
+            foreach ($storeCollection as $store) {
                 $stores[] = (int) $store->getId();
             }
             if (empty($stores)) {
@@ -103,14 +104,14 @@ class MageAustralia_AiReports_Model_Cron
             $report->save();
 
             MageAustralia_AiReports_Model_RunLog::record(
-                reportId:     (int) $report->getId(),
-                triggeredBy:  MageAustralia_AiReports_Model_RunLog::TRIGGERED_BY_CRON,
-                startTime:    $start,
-                elapsedMs:    $elapsed,
-                rowCount:     (int) ($envelope['meta']['row_count'] ?? 0),
-                status:       MageAustralia_AiReports_Model_RunLog::STATUS_SUCCESS,
+                reportId: (int) $report->getId(),
+                triggeredBy: MageAustralia_AiReports_Model_RunLog::TRIGGERED_BY_CRON,
+                startTime: $start,
+                elapsedMs: $elapsed,
+                rowCount: (int) ($envelope['meta']['row_count'] ?? 0),
+                status: MageAustralia_AiReports_Model_RunLog::STATUS_SUCCESS,
                 errorMessage: null,
-                emailSentTo:  $emailedTo,
+                emailSentTo: $emailedTo,
             );
 
             Mage::log(
@@ -134,14 +135,14 @@ class MageAustralia_AiReports_Model_Cron
                 $report->save();
 
                 MageAustralia_AiReports_Model_RunLog::record(
-                    reportId:     (int) $report->getId(),
-                    triggeredBy:  MageAustralia_AiReports_Model_RunLog::TRIGGERED_BY_CRON,
-                    startTime:    $start,
-                    elapsedMs:    $elapsed,
-                    rowCount:     0,
-                    status:       MageAustralia_AiReports_Model_RunLog::STATUS_ERROR,
+                    reportId: (int) $report->getId(),
+                    triggeredBy: MageAustralia_AiReports_Model_RunLog::TRIGGERED_BY_CRON,
+                    startTime: $start,
+                    elapsedMs: $elapsed,
+                    rowCount: 0,
+                    status: MageAustralia_AiReports_Model_RunLog::STATUS_ERROR,
                     errorMessage: $e->getMessage(),
-                    emailSentTo:  null,
+                    emailSentTo: null,
                 );
             } catch (\Throwable $inner) {
                 Mage::log('AiReports cron: failed to persist error state: ' . $inner->getMessage(), Mage::LOG_ERROR, 'aireports.log');
@@ -198,8 +199,6 @@ class MageAustralia_AiReports_Model_Cron
                 'body_html'      => $bodyHtml,
                 'detail_url'     => $detailUrl,
             ];
-
-            /** @var Mage_Core_Model_Email_Template $template */
             $template = Mage::getModel('core/email_template');
             $template->loadDefault('aireports_scheduled_run');
 

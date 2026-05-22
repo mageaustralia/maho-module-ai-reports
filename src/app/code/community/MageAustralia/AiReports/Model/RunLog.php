@@ -17,6 +17,7 @@ class MageAustralia_AiReports_Model_RunLog extends Mage_Core_Model_Abstract
     public const STATUS_SUCCESS = 'success';
     public const STATUS_ERROR   = 'error';
 
+    #[\Override]
     protected function _construct()
     {
         $this->_init('aireports/runLog');

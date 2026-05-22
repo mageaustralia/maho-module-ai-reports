@@ -58,10 +58,10 @@ class MageAustralia_AiReports_Model_CronExpressionMatcher
         $month   = (int) $now->format('n');
         $dow     = (int) $now->format('w');  // 0 = Sunday
 
-        return self::fieldMatches($minExpr,  $minute,  0, 59)
-            && self::fieldMatches($hourExpr, $hour,    0, 23)
-            && self::fieldMatches($domExpr,  $dom,     1, 31)
-            && self::fieldMatches($monExpr,  $month,   1, 12)
+        return self::fieldMatches($minExpr, $minute, 0, 59)
+            && self::fieldMatches($hourExpr, $hour, 0, 23)
+            && self::fieldMatches($domExpr, $dom, 1, 31)
+            && self::fieldMatches($monExpr, $month, 1, 12)
             && self::fieldMatchesDow($dowExpr, $dow);
     }
 
@@ -107,7 +107,9 @@ class MageAustralia_AiReports_Model_CronExpressionMatcher
         if (str_contains($segment, '/')) {
             [$base, $stepStr] = explode('/', $segment, 2);
             $step = (int) $stepStr;
-            if ($step <= 0) return false;
+            if ($step <= 0) {
+                return false;
+            }
 
             if ($base === '*') {
                 $rangeMin = $min;
@@ -119,7 +121,9 @@ class MageAustralia_AiReports_Model_CronExpressionMatcher
                 $rangeMax = $max;
             }
 
-            if ($value < $rangeMin || $value > $rangeMax) return false;
+            if ($value < $rangeMin || $value > $rangeMax) {
+                return false;
+            }
             return ($value - $rangeMin) % $step === 0;
         }
 

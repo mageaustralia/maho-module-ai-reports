@@ -11,6 +11,14 @@ declare(strict_types=1);
 
 class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminhtml_Controller_Action
 {
+    /**
+     * Sentinel for the Maho admin-controller standards check. The real ACL
+     * gate is _isAllowed() which routes per action between aireports/run and
+     * aireports/manage_saved.
+     */
+    public const ADMIN_RESOURCE = 'aireports/run';
+
+    #[\Override]
     protected function _isAllowed(): bool
     {
         return match ($this->getRequest()->getActionName()) {
@@ -48,6 +56,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             }
 
             $stores   = $helper->getUserAccessibleStoreIds();
+            /** @phpstan-ignore-next-line method.notFound */
             $storeId  = (int) Mage::app()->getStore()->getId();
 
             /** @var MageAustralia_AiReports_Helper_ProductResolver $resolver */
@@ -73,8 +82,8 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
 
             $helper->recordInvoke();
 
-            $userId = (int) (Mage::getSingleton('admin/session')->getUser()?->getId() ?? 0);
-            $resolvedIds = array_map(fn ($p) => $p['id'] . ':' . $p['name'], $resolved);
+            $userId = (int) (Mage::getSingleton('admin/session')->getUser()->getId() ?? 0);
+            $resolvedIds = array_map(fn($p) => $p['id'] . ':' . $p['name'], $resolved);
             Mage::log(
                 sprintf(
                     'AiReports generate: user_id=%d elapsed_ms=%d row_count=%d resolved_products=[%s] q=%s plan=%s',
@@ -211,7 +220,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
                 $report->save();
             }
 
-            $userId = (int) (Mage::getSingleton('admin/session')->getUser()?->getId() ?? 0);
+            $userId = (int) (Mage::getSingleton('admin/session')->getUser()->getId() ?? 0);
             $overrideTag = $overrideActive ? ' period_override=' . $periodFrom . '..' . $periodTo : '';
             Mage::log(
                 sprintf(
@@ -279,7 +288,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             $now      = Mage_Core_Model_Locale::nowUtc();
             $filename = 'report-' . str_replace([' ', ':'], ['-', ''], substr($now, 0, 19)) . '.csv';
 
-            $userId = (int) (Mage::getSingleton('admin/session')->getUser()?->getId() ?? 0);
+            $userId = (int) (Mage::getSingleton('admin/session')->getUser()->getId() ?? 0);
             Mage::log(
                 sprintf(
                     'AiReports exportCsv: user_id=%d row_count=%d file=%s',
@@ -301,7 +310,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             // BOM for Excel UTF-8 compatibility.
             fwrite($out, "\xEF\xBB\xBF");
             // Header row: column labels.
-            fputcsv($out, array_map(fn ($c) => $c['label'], $tableBlock['columns']));
+            fputcsv($out, array_map(fn($c) => $c['label'], $tableBlock['columns']));
             // Data rows.
             foreach ($tableBlock['rows'] as $row) {
                 $cells = [];
@@ -360,7 +369,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             $now      = Mage_Core_Model_Locale::nowUtc();
             $filename = 'report-' . str_replace([' ', ':'], ['-', ''], substr($now, 0, 19)) . '.csv';
 
-            $userId = (int) (Mage::getSingleton('admin/session')->getUser()?->getId() ?? 0);
+            $userId = (int) (Mage::getSingleton('admin/session')->getUser()->getId() ?? 0);
             Mage::log(
                 sprintf(
                     'AiReports exportSavedCsv: user_id=%d report_id=%d row_count=%d file=%s',
@@ -381,7 +390,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
 
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, array_map(fn ($c) => $c['label'], $tableBlock['columns']));
+            fputcsv($out, array_map(fn($c) => $c['label'], $tableBlock['columns']));
             foreach ($tableBlock['rows'] as $row) {
                 $cells = [];
                 foreach ($tableBlock['columns'] as $col) {
@@ -435,9 +444,9 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
                 }
             }
 
-            $report->setData('schedule_enabled',     $enabled)
-                   ->setData('schedule_cron_expr',   $cronExpr !== '' ? $cronExpr : null)
-                   ->setData('email_recipients',     $recipients !== '' ? $recipients : null)
+            $report->setData('schedule_enabled', $enabled)
+                   ->setData('schedule_cron_expr', $cronExpr !== '' ? $cronExpr : null)
+                   ->setData('email_recipients', $recipients !== '' ? $recipients : null)
                    ->setData('email_subject_prefix', $prefix !== '' ? $prefix : null)
                    ->save();
 
@@ -514,7 +523,10 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
     {
         try {
             $report = Mage::getModel('aireports/report')->load((int) $this->getRequest()->getParam('id'));
-            if (!$report->getId()) { $this->_jsonError('Not found.'); return; }
+            if (!$report->getId()) {
+                $this->_jsonError('Not found.');
+                return;
+            }
             $report->setTitle((string) $this->getRequest()->getParam('title', $report->getTitle()))->save();
             $this->_jsonSuccess([]);
         } catch (\Throwable $e) {
@@ -550,7 +562,7 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
             $maxSort  = (int) $conn->fetchOne(
                 'SELECT MAX(pinned_sort_order) FROM '
                 . $resource->getTableName('aireports/report')
-                . ' WHERE is_pinned_to_dashboard = 1'
+                . ' WHERE is_pinned_to_dashboard = 1',
             );
             $report->setData('pinned_sort_order', $maxSort + 1);
             $report->save();

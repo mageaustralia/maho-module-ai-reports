@@ -11,11 +11,13 @@ declare(strict_types=1);
 
 class MageAustralia_AiReports_Model_Report extends Mage_Core_Model_Abstract
 {
+    #[\Override]
     protected function _construct()
     {
         $this->_init('aireports/report');
     }
 
+    #[\Override]
     protected function _beforeSave()
     {
         $now = Mage_Core_Model_Locale::nowUtc();

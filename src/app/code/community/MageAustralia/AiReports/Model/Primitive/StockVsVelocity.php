@@ -9,12 +9,14 @@
 
 declare(strict_types=1);
 
-class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
-    implements MageAustralia_AiReports_Model_PrimitiveInterface
+class MageAustralia_AiReports_Model_Primitive_StockVsVelocity implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
     use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
     #[\Override]
-    public function getName(): string { return 'stock_vs_velocity'; }
+    public function getName(): string
+    {
+        return 'stock_vs_velocity';
+    }
 
     #[\Override]
     public function getDescription(): string
@@ -143,13 +145,19 @@ class MageAustralia_AiReports_Model_Primitive_StockVsVelocity
         // they opted out (use_config=0 AND manage_stock=0).
         $select = $conn->select()
             ->from(['p' => $r->getTableName('catalog/product')], ['product_id' => 'entity_id', 'sku'])
-            ->joinLeft(['stock' => $r->getTableName('cataloginventory/stock_item')],
-                'stock.product_id = p.entity_id', ['qty_on_hand' => 'stock.qty'])
-            ->joinLeft(['sales' => new Maho\Db\Expr('(' . $salesSubSelect . ')')],
-                'sales.product_id = p.entity_id', [
+            ->joinLeft(
+                ['stock' => $r->getTableName('cataloginventory/stock_item')],
+                'stock.product_id = p.entity_id',
+                ['qty_on_hand' => 'stock.qty'],
+            )
+            ->joinLeft(
+                ['sales' => new Maho\Db\Expr('(' . $salesSubSelect . ')')],
+                'sales.product_id = p.entity_id',
+                [
                     'qty_sold' => new Maho\Db\Expr('COALESCE(sales.qty_sold, 0)'),
                     'name'     => 'sales.name',
-                ])
+                ],
+            )
             ->where('p.entity_id IN (?)', $productIds)
             ->where('stock.item_id IS NULL OR ' . $manageStockExpr);
 

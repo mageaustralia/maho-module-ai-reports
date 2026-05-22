@@ -21,6 +21,7 @@ class MageAustralia_AiReports_Block_Adminhtml_Saved_Grid extends Mage_Adminhtml_
         $this->setUseAjax(true);
     }
 
+    #[\Override]
     protected function _prepareCollection()
     {
         $collection = Mage::getResourceModel('aireports/report_collection');
@@ -28,6 +29,7 @@ class MageAustralia_AiReports_Block_Adminhtml_Saved_Grid extends Mage_Adminhtml_
         return parent::_prepareCollection();
     }
 
+    #[\Override]
     protected function _prepareColumns()
     {
         $this->addColumn('title', [
@@ -85,11 +87,13 @@ class MageAustralia_AiReports_Block_Adminhtml_Saved_Grid extends Mage_Adminhtml_
         return parent::_prepareColumns();
     }
 
+    #[\Override]
     public function getRowUrl($row): string
     {
         return $this->getUrl('*/*/viewSaved', ['id' => $row->getId()]);
     }
 
+    #[\Override]
     public function getGridUrl(): string
     {
         return $this->getUrl('*/*/savedGrid', ['_current' => true]);

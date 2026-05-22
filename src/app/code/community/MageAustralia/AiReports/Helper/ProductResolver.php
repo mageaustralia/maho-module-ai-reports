@@ -73,11 +73,11 @@ class MageAustralia_AiReports_Helper_ProductResolver extends Mage_Core_Helper_Ab
             return [];
         }
 
-        usort($scored, fn ($a, $b) => $b['similarity'] <=> $a['similarity']);
+        usort($scored, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
         $scored = array_slice($scored, 0, $topK);
 
         // Look up names
-        $ids   = array_map(fn ($r) => $r['id'], $scored);
+        $ids   = array_map(fn($r) => $r['id'], $scored);
         $names = $this->loadProductNames($ids, $storeId);
 
         $result = [];
