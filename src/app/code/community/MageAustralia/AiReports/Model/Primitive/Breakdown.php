@@ -9,18 +9,23 @@
 
 declare(strict_types=1);
 
-class MageAustralia_AiReports_Model_Primitive_Breakdown
-    implements MageAustralia_AiReports_Model_PrimitiveInterface
+class MageAustralia_AiReports_Model_Primitive_Breakdown implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
     use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
-    public function getName(): string { return 'breakdown'; }
+    #[\Override]
+    public function getName(): string
+    {
+        return 'breakdown';
+    }
 
+    #[\Override]
     public function getDescription(): string
     {
         return 'Returns the share of a metric across a dimension over a period (pie chart). ' .
                'Use for "revenue by category", "orders by status", "sales by store".';
     }
 
+    #[\Override]
     public function getArgsSchema(): array
     {
         return [
@@ -41,11 +46,13 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
         ];
     }
 
+    #[\Override]
     public function getDefaultRender(): array
     {
         return ['primary' => 'pie_chart', 'secondary' => 'table'];
     }
 
+    #[\Override]
     public function execute(array $args, array $scopeStoreIds): array
     {
         $conn   = Mage::getSingleton('core/resource')->getConnection('core_read');
@@ -66,6 +73,7 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
      * @param array<string, mixed> $rowKey  expects keys: link_id (int|null), label (string)
      * @return array<int, array<string, mixed>>|null
      */
+    #[\Override]
     public function drill(array $args, array $scopeStoreIds, array $rowKey): ?array
     {
         // order_status has no link_id - drilldown not supported.
@@ -78,6 +86,7 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
         return $topN->drill($args, $scopeStoreIds, $rowKey);
     }
 
+    #[\Override]
     public function supportsDrilldown(): bool
     {
         return true;
@@ -107,7 +116,7 @@ class MageAustralia_AiReports_Model_Primitive_Breakdown
                 'label'     => (string) $row['label'],
                 'value'     => $val,
                 'share_pct' => $total > 0 ? round(($val / $total) * 100.0, 2) : 0.0,
-                'link_id'   => isset($row['link_id']) && $row['link_id'] !== null ? (int) $row['link_id'] : null,
+                'link_id'   => isset($row['link_id']) ? (int) $row['link_id'] : null,
             ];
             if ($linkRoute && $entry['link_id']) {
                 $entry['link_url'] = $this->buildAdminUrl($linkRoute, [$linkParam => $entry['link_id']]);

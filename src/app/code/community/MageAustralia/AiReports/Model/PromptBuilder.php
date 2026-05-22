@@ -27,7 +27,7 @@ class MageAustralia_AiReports_Model_PromptBuilder
 
         $catalog = '';
         foreach ($this->registry->all() as $primitive) {
-            $catalog .= "## " . $primitive->getName() . "\n";
+            $catalog .= '## ' . $primitive->getName() . "\n";
             $catalog .= $primitive->getDescription() . "\n";
             $catalog .= "Args schema:\n```json\n";
             $catalog .= json_encode($primitive->getArgsSchema(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

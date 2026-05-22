@@ -35,13 +35,18 @@ class MageAustralia_AiReports_Helper_Data extends Mage_Core_Helper_Abstract
     {
         $session = Mage::getSingleton('admin/session');
         $user    = $session->getUser();
-        if (!$user) return [];
+        if (!$user) {
+            return [];
+        }
         $role    = $user->getRole();
-        if (!$role) return [];
+        if (!$role) {
+            return [];
+        }
 
         // GWS_IS_ALL means all stores accessible.
         if ((int) $role->getGwsIsAll() === 1) {
             $allIds = [];
+            /** @phpstan-ignore-next-line method.notFound */
             foreach (Mage::app()->getStores(false) as $store) {
                 $allIds[] = (int) $store->getId();
             }
@@ -50,13 +55,15 @@ class MageAustralia_AiReports_Helper_Data extends Mage_Core_Helper_Abstract
 
         // gws_stores is a CSV string of allowed store IDs.
         $csv = (string) $role->getGwsStores();
-        if ($csv === '') return [];
-        return array_map('intval', array_filter(explode(',', $csv), 'strlen'));
+        if ($csv === '') {
+            return [];
+        }
+        return array_map('intval', array_filter(explode(',', $csv), static fn(string $s): bool => $s !== ''));
     }
 
     public function rateLimitKeyForCurrentUser(): string
     {
-        $userId = (int) (Mage::getSingleton('admin/session')->getUser()?->getId() ?? 0);
+        $userId = (int) (Mage::getSingleton('admin/session')->getUser()->getId() ?? 0);
         return 'aireports_last_invoke_' . $userId;
     }
 
@@ -80,6 +87,7 @@ class MageAustralia_AiReports_Helper_Data extends Mage_Core_Helper_Abstract
 
     public function getStoreTimezone(): string
     {
+        /** @phpstan-ignore-next-line method.notFound */
         return (string) (Mage::app()->getStore()->getConfig('general/locale/timezone') ?: 'UTC');
     }
 

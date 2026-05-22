@@ -9,12 +9,14 @@
 
 declare(strict_types=1);
 
-class MageAustralia_AiReports_Model_Primitive_TopN
-    implements MageAustralia_AiReports_Model_PrimitiveInterface
+class MageAustralia_AiReports_Model_Primitive_TopN implements MageAustralia_AiReports_Model_PrimitiveInterface
 {
     use MageAustralia_AiReports_Model_Primitive_UrlBuilderTrait;
     #[\Override]
-    public function getName(): string { return 'top_n'; }
+    public function getName(): string
+    {
+        return 'top_n';
+    }
 
     #[\Override]
     public function getDescription(): string
@@ -162,8 +164,12 @@ class MageAustralia_AiReports_Model_Primitive_TopN
         ];
 
         foreach ($extras as $extra) {
-            if ($extra === $args['metric']) continue;
-            if (!isset($valueExprs[$extra])) continue;
+            if ($extra === $args['metric']) {
+                continue;
+            }
+            if (!isset($valueExprs[$extra])) {
+                continue;
+            }
             $columns[$extra] = new Maho\Db\Expr($valueExprs[$extra]);
         }
 

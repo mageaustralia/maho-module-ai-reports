@@ -150,13 +150,13 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
             sort($dates);
             $series = [];
             foreach ($byLabel as $label => $byDate) {
-                $data = array_map(fn ($d) => $byDate[$d] ?? 0.0, $dates);
+                $data = array_map(fn($d) => $byDate[$d] ?? 0.0, $dates);
                 $series[] = ['name' => (string) $label, 'data' => $data];
             }
             return ['type' => 'chart', 'chart_type' => 'line', 'x_axis' => $dates, 'series' => $series];
         }
 
-        $labels    = array_map(fn ($r) => (string) $r['label'], $rows);
+        $labels    = array_map(fn($r) => (string) $r['label'], $rows);
         $chartType = $type === 'pie_chart' ? 'pie' : 'bar';
 
         if ($primitive === 'growth') {
@@ -165,8 +165,8 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
                 'chart_type' => 'bar',
                 'x_axis'     => $labels,
                 'series'     => [
-                    ['name' => 'Period A', 'data' => array_map(fn ($r) => (float) ($r['value_a'] ?? 0), $rows)],
-                    ['name' => 'Period B', 'data' => array_map(fn ($r) => (float) ($r['value_b'] ?? 0), $rows)],
+                    ['name' => 'Period A', 'data' => array_map(fn($r) => (float) ($r['value_a'] ?? 0), $rows)],
+                    ['name' => 'Period B', 'data' => array_map(fn($r) => (float) ($r['value_b'] ?? 0), $rows)],
                 ],
             ];
         }
@@ -177,13 +177,13 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
                 'chart_type' => 'bar',
                 'x_axis'     => $labels,
                 'series'     => [
-                    ['name' => 'Days of cover', 'data' => array_map(fn ($r) => (float) ($r['days_of_cover'] ?? 0), $rows)],
+                    ['name' => 'Days of cover', 'data' => array_map(fn($r) => (float) ($r['days_of_cover'] ?? 0), $rows)],
                 ],
             ];
         }
 
         // top_n, breakdown, default: rows have label + value
-        $values = array_map(fn ($r) => (float) ($r['value'] ?? 0), $rows);
+        $values = array_map(fn($r) => (float) ($r['value'] ?? 0), $rows);
         return [
             'type'       => 'chart',
             'chart_type' => $chartType,
@@ -211,8 +211,12 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
                 $cells[$col['key']] = $r[$col['key']] ?? null;
             }
             $entry = ['cells' => $cells];
-            if (isset($r['link_url'])) $entry['link_url'] = $r['link_url'];
-            if (isset($r['link_id'])) $entry['link_id'] = $r['link_id'];
+            if (isset($r['link_url'])) {
+                $entry['link_url'] = $r['link_url'];
+            }
+            if (isset($r['link_id'])) {
+                $entry['link_id'] = $r['link_id'];
+            }
             $tableRows[] = $entry;
         }
         $block = ['type' => 'table', 'columns' => $columns, 'rows' => $tableRows];
@@ -227,7 +231,7 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
                     continue;
                 }
                 $totals[$col['key']] = array_sum(array_map(
-                    static fn (array $r): float => (float) ($r['cells'][$col['key']] ?? 0),
+                    static fn(array $r): float => (float) ($r['cells'][$col['key']] ?? 0),
                     $tableRows,
                 ));
             }
@@ -244,7 +248,9 @@ class MageAustralia_AiReports_Model_PrimitiveExecutor
     {
         $columns = [];
         foreach ($sample as $key => $value) {
-            if (in_array($key, ['link_id', 'link_url'], true)) continue;
+            if (in_array($key, ['link_id', 'link_url'], true)) {
+                continue;
+            }
             $columns[] = [
                 'key'   => $key,
                 'label' => ucwords(str_replace('_', ' ', $key)),
