@@ -40,6 +40,17 @@
                             </manage_saved>
                         </children>
                     </aireports>
+                    <system>
+                        <children>
+                            <config>
+                                <children>
+                                    <aireports translate="title" module="aireports">
+                                        <title>AI Reports</title>
+                                    </aireports>
+                                </children>
+                            </config>
+                        </children>
+                    </system>
                 </children>
             </admin>
         </resources>
