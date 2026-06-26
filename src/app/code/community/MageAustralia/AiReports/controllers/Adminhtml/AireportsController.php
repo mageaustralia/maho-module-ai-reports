@@ -27,6 +27,18 @@ class MageAustralia_AiReports_Adminhtml_AireportsController extends Mage_Adminht
         };
     }
 
+    #[\Override]
+    public function preDispatch()
+    {
+        // CSRF: every state-changing action is POSTed with form_key by
+        // ai-reports.js (postForm appends window.FORM_KEY). viewSaved/export
+        // are GET reads and stay unforced.
+        $this->_setForcedFormKeyActions([
+            'generate', 'save', 'runSaved', 'schedule', 'rename', 'delete', 'pin', 'unpin',
+        ]);
+        return parent::preDispatch();
+    }
+
     #[\Maho\Config\Route('/admin/aireports/ask')]
     public function askAction(): void
     {
